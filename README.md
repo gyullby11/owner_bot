@@ -8,6 +8,7 @@ AI 기반 소상공인 마케팅 콘텐츠 자동 생성 SaaS
 
 ### 1. 클론
 git clone https://github.com/gyullby11/owner_bot.git
+
 cd owner_bot
 
 ### 2. 환경변수 세팅
@@ -39,7 +40,9 @@ docker compose up
 
 ### 작업 시작
 git checkout dev
+
 git pull origin dev
+
 git checkout -b feature/기능이름
 
 ### 작업 완료 후
@@ -48,6 +51,7 @@ git commit -m "feat: 작업내용"
 git push origin feature/기능이름
 
 → GitHub에서 PR 올리기 (base: dev)
+
 → 가영이 확인 후 머지
 
 ---
