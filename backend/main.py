@@ -1,8 +1,12 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from database import Base, engine
 from api.router import api_router
 
-# 모델 임포트 (테이블 생성 위해 필수)
 from modules.user.models import User
 from modules.generate.models import GenerationHistory
 from modules.history.models import CreditTransaction, Subscription
@@ -13,11 +17,19 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.on_event("startup")
 async def startup():
     Base.metadata.create_all(bind=engine)
 
-# 라우터 통합 연결
 app.include_router(api_router, prefix="/api")
 
 @app.get("/")

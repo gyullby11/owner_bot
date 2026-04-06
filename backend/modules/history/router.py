@@ -44,7 +44,7 @@ def delete_history(
     crud.delete_history(db, history_id)
 
 
-@router.post("/{history_id}/regenerate")
+@router.post("/{history_id}/regenerate", response_model=None)
 async def regenerate(
     history_id: int,
     db: Session = Depends(get_db),
@@ -58,4 +58,4 @@ async def regenerate(
     body = GenerateRequest(**input_data)
 
     from modules.generate.router import generate
-    return await generate(body=body, db=db, current_user=current_user)
+    return await generate(body=body, db=db)
