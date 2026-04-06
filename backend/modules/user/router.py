@@ -1,44 +1,65 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from database import get_db
-from modules.user.schemas import UserRegister, UserLogin
+from modules.user.schemas import UserRegister, UserLogin, Token, UserOut
+from modules.user.models import User
+from modules.history.models import CreditTransaction
 from modules.user import crud, service
 
 router = APIRouter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-@router.post("/signup")
-def signup(user: UserRegister, db: Session = Depends(get_db)):
-    existing = crud.get_user_by_email(db, user.email)
-    if existing:
+# JWT 현재 유저 추출 (의존성)
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> User:
+    payload = service.decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="토큰이 유효하지 않습니다.")
+    user = db.query(User).filter(User.id == payload.get("sub")).first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="사용자를 찾을 수 없습니다.")
+    return user
+
+
+# 회원가입
+@router.post("/signup", response_model=UserOut, status_code=201)
+def signup(body: UserRegister, db: Session = Depends(get_db)):
+    if crud.get_user_by_email(db, body.email):
         raise HTTPException(status_code=400, detail="이미 사용 중인 이메일입니다.")
 
-    hashed = service.hash_password(user.password)
-    new_user = crud.create_user(db, user.email, hashed, user.nickname)
+    hashed = service.hash_password(body.password)
+    user = crud.create_user(db, body.email, hashed, body.nickname)
 
-    return {
-        "message": "회원가입 성공",
-        "email": new_user.email,
-        "nickname": new_user.nickname,
-        "credits": new_user.credits
-    }
+    # 가입 보너스 크레딧 거래 기록
+    db.add(CreditTransaction(
+        user_id=user.id,
+        amount=3,
+        type="earn",
+        note="가입 보너스",
+    ))
+    db.commit()
+    db.refresh(user)
+    return user
 
 
-@router.post("/login")
-def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = crud.get_user_by_email(db, user.email)
-
-    if not db_user:
-        raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 틀렸습니다.")
-    if not service.verify_password(user.password, db_user.hashed_password):
-        raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 틀렸습니다.")
-    if not db_user.is_active:
+# 로그인
+@router.post("/login", response_model=Token)
+def login(body: UserLogin, db: Session = Depends(get_db)):
+    user = crud.get_user_by_email(db, body.email)
+    if not user or not service.verify_password(body.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 틀립니다.")
+    if not user.is_active:
         raise HTTPException(status_code=403, detail="비활성화된 계정입니다.")
 
-    return {
-        "message": "로그인 성공",
-        "email": db_user.email,
-        "nickname": db_user.nickname,
-        "credits": db_user.credits,
-        "plan": db_user.plan
-    }
+    token = service.create_access_token({"sub": str(user.id)})
+    return {"access_token": token, "token_type": "bearer"}
+
+
+# 내 정보 조회
+@router.get("/me", response_model=UserOut)
+def me(current_user: User = Depends(get_current_user)):
+    return current_user

@@ -3,14 +3,28 @@ from typing import Optional
 from datetime import datetime
 
 
-class HistoryResponse(BaseModel):
+class HistoryOut(BaseModel):
     id: int
     shop_name: str
-    keyword: str
+    business_type: str
     region: str
+    keyword: str
+    feature: Optional[str]
     tone: str
-    created_at: Optional[datetime]
-    output: dict
+    output_payload: str
+    credits_used: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CreditTransactionOut(BaseModel):
+    id: int
+    amount: int
+    type: str
+    note: Optional[str]
+    created_at: datetime
 
     class Config:
         from_attributes = True

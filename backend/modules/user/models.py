@@ -21,3 +21,5 @@ class User(Base):
                                  cascade="all, delete-orphan")
     transactions  = relationship("CreditTransaction", back_populates="user",
                                  cascade="all, delete-orphan")
+    subscriptions = relationship("Subscription", back_populates="user",
+                                 cascade="all, delete-orphan")
