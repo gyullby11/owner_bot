@@ -2,9 +2,11 @@
 # 사장봇 (SajangBot)
 
 
-서비스명: 사장봇 (SajangBot)
-GitHub 레포 : owner_bot
-GitHub 주소: github.com/gyullby11/owner_bot
+#서비스명: 사장봇 (SajangBot)
+
+#GitHub 레포 : owner_bot
+
+#GitHub 주소: github.com/gyullby11/owner_bot
 ---
 
 ## 📌 시작하기
@@ -80,48 +82,8 @@ git push origin feature/기능이름
 ####프로젝트 폴더 구조
 아래 구조를 레포에 먼저 잡아두고 팀원들에게 공유합니다.( 빈 폴더는 .gitkeep 파일로 유지합니다.)
 
-sajangbot/
-├── backend/
-│   ├── app/
-│   │   ├── main.py          # FastAPI 앱 진입점
-│   │   ├── routers/         # API 라우터 (generate, history, auth)
-│   │   ├── models/          # SQLAlchemy 모델
-│   │   ├── schemas/         # Pydantic 스키마
-│   │   └── services/        # 비즈니스 로직, OpenAI 호출
-│   ├── .env.example         # 환경변수 샘플 (실제 .env는 .gitignore)
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/
-│   ├── index.html
-│   ├── history.html
-│   ├── css/
-│   └── js/
-├── docker-compose.yml
-├── .github/
-│   ├── workflows/           # GitHub Actions CI/CD
-│   └── PULL_REQUEST_TEMPLATE.md
-└── README.md
-owner_bot/
-├── backend/
-│   ├── app/
-│   │   ├── main.py          # FastAPI 앱 진입점
-│   │   ├── routers/         # API 라우터 (generate, history, auth)
-│   │   ├── models/          # SQLAlchemy 모델
-│   │   ├── schemas/         # Pydantic 스키마
-│   │   └── services/        # 비즈니스 로직, OpenAI 호출
-│   ├── .env.example         # 환경변수 샘플 (실제 .env는 .gitignore)
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/
-│   ├── index.html
-│   ├── history.html
-│   ├── css/
-│   └── js/
-├── docker-compose.yml
-├── .github/
-│   ├── workflows/           # GitHub Actions CI/CD
-│   └── PULL_REQUEST_TEMPLATE.md
-└── README.md
+<img width="517" height="412" alt="image" src="https://github.com/user-attachments/assets/e8e08337-f729-4064-82a7-c0cf0845c50d" />
+
 
 
 ## 👥 팀원
