@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>콘텐츠 생성 - 사장봇</title>
+    <link rel="stylesheet" href="/frontend/css/my_styles.css">
+</head>
+<body>
+    <header>
+        <a href="/frontend/index.html">사장봇</a>
+        <nav>
+            <a href="/frontend/html/mypage.html">마이페이지</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="generate-section">
+            <h2>콘텐츠 생성</h2>
+            <div class="input-form">
+                <input type="text" id="shop_name" placeholder="가게 이름" />
+                <input type="text" id="business_type" placeholder="업종 (예: 피부관리)" />
+                <input type="text" id="region" placeholder="지역 (예: 김포 장기동)" />
+                <input type="text" id="keyword" placeholder="메인 키워드" />
+                <input type="text" id="feature" placeholder="가게 특징 한 줄 (선택)" />
+                <select id="tone">
+                    <option value="friendly">친근한</option>
+                    <option value="professional">전문적인</option>
+                    <option value="emotional">감성적인</option>
+                </select>
+                <button onclick="generateContent()">콘텐츠 생성하기</button>
+            </div>
+
+            <div id="result" style="display:none;">
+                <div class="tabs">
+                    <button onclick="showTab('blog')">블로그</button>
+                    <button onclick="showTab('review')">리뷰</button>
+                    <button onclick="showTab('shorts')">쇼츠</button>
+                    <button onclick="showTab('thumbnail')">썸네일</button>
+                </div>
+                <div id="tab-content"></div>
+                <button onclick="copyContent()">복사하기</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="/frontend/js/my_script.js"></script>
+</body>
+</html>
