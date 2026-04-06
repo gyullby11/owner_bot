@@ -5,7 +5,7 @@ from api.router import api_router
 # 모델 임포트 (테이블 생성 위해 필수)
 from modules.user.models import User
 from modules.generate.models import GenerationHistory
-from modules.history.models import CreditTransaction
+from modules.history.models import CreditTransaction, Subscription
 
 app = FastAPI(
     title="사장봇 API",
