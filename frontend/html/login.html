@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - 사장봇</title>
+    <link rel="stylesheet" href="/frontend/css/my_styles.css">
+</head>
+<body>
+    <header>
+        <a href="/frontend/index.html">사장봇</a>
+    </header>
+
+    <main>
+        <section class="form-section">
+            <h2>로그인</h2>
+            <div id="login-form">
+                <input type="email" id="email" placeholder="이메일" />
+                <input type="password" id="password" placeholder="비밀번호" />
+                <button onclick="login()">로그인</button>
+                <p>계정이 없으신가요? <a href="/frontend/html/register.html">회원가입</a></p>
+            </div>
+            <div id="message"></div>
+        </section>
+    </main>
+
+    <script src="/frontend/js/my_script.js"></script>
+</body>
+</html>
