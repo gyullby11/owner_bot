@@ -1,12 +1,9 @@
-import os
 import json
 from openai import OpenAI
-from dotenv import load_dotenv
+from config import settings
 from app.services.prompt_builder import build_prompt
 
-load_dotenv()
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 def generate_content(data: dict) -> dict:
