@@ -32,7 +32,8 @@ async def startup():
     Base.metadata.create_all(bind=engine)
 
 app.include_router(api_router, prefix="/api")
-app.mount("/", StaticFiles(directory="../frontend", html=True), name="frontend")
+app.mount("/frontend", StaticFiles(directory="../frontend"), name="frontend")
+
 
 @app.get("/")
 def root():
