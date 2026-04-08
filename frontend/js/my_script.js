@@ -80,9 +80,8 @@ async function generateContent() {
 
         currentOutput = data.output;
 
-        const resultDiv = document.getElementById("result");
-        if (resultDiv) resultDiv.style.display = "block";
-
+        document.getElementById("empty-state").classList.add("hidden");
+        document.getElementById("loading-state").classList.add("hidden");
         showTab("blog");
 
     } catch (err) {
@@ -101,15 +100,27 @@ function showTab(tab) {
     if (!currentOutput) return;
 
     if (tab === "blog") {
-        content.innerText = currentOutput.blog || "";
+        const blog = currentOutput.blog;
+        if (typeof blog === "object") {
+            content.innerText = `${blog.title || ""}\n\n${blog.body || ""}\n\n${blog.hashtags || ""}`;
+        } else {
+            content.innerText = blog || "";
+        }
     } else if (tab === "review") {
         content.innerText = currentOutput.review || "";
     } else if (tab === "shorts") {
-        content.innerText = currentOutput.shorts || "";
+        const s = currentOutput.shorts;
+        if (typeof s === "object") {
+            content.innerText = `${s.cut1 || ""}\n${s.cut2 || ""}\n${s.cut3 || ""}`;
+        } else {
+            content.innerText = s || "";
+        }
     } else if (tab === "thumbnail") {
         const thumb = currentOutput.thumbnail;
         content.innerText = Array.isArray(thumb) ? thumb.join("\n") : (thumb || "");
     }
+
+    switchUiTab(tab);
 }
 
 function copyContent() {
