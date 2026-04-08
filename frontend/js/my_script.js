@@ -81,13 +81,13 @@ async function generateContent() {
         currentOutput = data.output;
         console.log("6. currentOutput:", currentOutput);
 
-        const resultDiv = document.getElementById("result");
+        const resultDiv = document.getElementById("result-container");
         console.log("7. resultDiv:", resultDiv);
-        resultDiv.style.display = "block";
-
+        // empty-state 숨기기
+        document.getElementById("empty-state").classList.add("hidden");
+        document.getElementById("loading-state").classList.add("hidden");
         console.log("8. showTab 호출");
         showTab("blog");
-
         if (btn) btn.innerText = "콘텐츠 생성하기";
         console.log("9. 완료");
 
@@ -106,15 +106,27 @@ function showTab(tab) {
     if (!currentOutput) return;
 
     if (tab === "blog") {
-        content.innerText = currentOutput.blog || "";
+        const blog = currentOutput.blog;
+        if (typeof blog === "object") {
+            content.innerText = `${blog.title || ""}\n\n${blog.body || ""}\n\n${blog.hashtags || ""}`;
+        } else {
+            content.innerText = blog || "";
+        }
     } else if (tab === "review") {
         content.innerText = currentOutput.review || "";
     } else if (tab === "shorts") {
-        content.innerText = currentOutput.shorts || "";
+        const s = currentOutput.shorts;
+        if (typeof s === "object") {
+            content.innerText = `${s.cut1 || ""}\n${s.cut2 || ""}\n${s.cut3 || ""}`;
+        } else {
+            content.innerText = s || "";
+        }
     } else if (tab === "thumbnail") {
         const thumb = currentOutput.thumbnail;
         content.innerText = Array.isArray(thumb) ? thumb.join("\n") : (thumb || "");
     }
+
+    switchUiTab(tab);
 }
 
 function copyContent() {
