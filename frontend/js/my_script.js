@@ -28,7 +28,13 @@ async function login() {
         body: JSON.stringify({ email, password })
     });
     const data = await res.json();
-    document.getElementById("message").innerText = data.message || data.detail;
+
+    if (res.ok && data.access_token) {
+        localStorage.setItem("access_token", data.access_token);
+        window.location.href = "./generate.html";
+    } else {
+        document.getElementById("message").innerText = data.detail || "로그인에 실패했습니다.";
+    }
 }
 
 // 콘텐츠 생성
