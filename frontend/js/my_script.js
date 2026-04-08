@@ -51,7 +51,6 @@ async function login() {
    ========================================================================== */
 
 async function generateContent() {
-    console.log("1. 함수 시작");
     const body = {
         shop_name: document.getElementById("shop_name").value,
         business_type: document.getElementById("business_type").value,
@@ -61,38 +60,33 @@ async function generateContent() {
         tone: document.getElementById("tone").value,
     };
 
-    console.log("2. 요청 데이터:", body);
+    const token = localStorage.getItem("token");
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
 
     try {
-        const btn = document.querySelector("button[type='button'][onclick='generateContent()']");
-        if (btn) btn.innerText = "생성 중...";
-
-        console.log("3. fetch 시작");
         const res = await fetch(`${API_BASE}/generate`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify(body)
         });
 
-        console.log("4. 응답 받음:", res.status);
         const data = await res.json();
-        console.log("5. 데이터:", data);
+
+        if (!res.ok) {
+            alert(data.detail || "콘텐츠 생성에 실패했습니다.");
+            return;
+        }
 
         currentOutput = data.output;
-        console.log("6. currentOutput:", currentOutput);
 
-        const resultDiv = document.getElementById("result-container");
-        console.log("7. resultDiv:", resultDiv);
-        // empty-state 숨기기
         document.getElementById("empty-state").classList.add("hidden");
         document.getElementById("loading-state").classList.add("hidden");
-        console.log("8. showTab 호출");
         showTab("blog");
-        if (btn) btn.innerText = "콘텐츠 생성하기";
-        console.log("9. 완료");
 
     } catch (err) {
         console.error("에러:", err);
+        alert("서버에 연결할 수 없습니다.");
     }
 }
 
@@ -141,24 +135,27 @@ function copyContent() {
 
 async function loadHistory() {
     const token = localStorage.getItem("token");
-    if (!token) return;
-    const res = await fetch(`${API_BASE}/history`, {
-        headers: { "Authorization": `Bearer ${token}` }
-    });
-    const data = await res.json();
     const list = document.getElementById("history-list");
     if (!list) return;
+    if (!token) {
+        list.innerHTML = "<p>로그인 후 이용할 수 있습니다.</p>";
+        return;
+    }
 
     try {
-        const res = await fetch(`${API_BASE}/history`);
+        const res = await fetch(`${API_BASE}/history`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
         if (!res.ok) return;
         const data = await res.json();
-        list.innerHTML = data.map(h => `
-            <div style="padding:10px;border-bottom:1px solid #eee;">
-                <p>${h.shop_name} · ${h.keyword} · ${h.created_at}</p>
-                <button onclick="deleteHistory(${h.id})">삭제</button>
-            </div>
-        `).join("");
+        list.innerHTML = data.length === 0
+            ? "<p>생성 이력이 없습니다.</p>"
+            : data.map(h => `
+                <div style="padding:10px;border-bottom:1px solid #eee;">
+                    <p>${h.shop_name} · ${h.keyword} · ${h.created_at}</p>
+                    <button onclick="deleteHistory(${h.id})">삭제</button>
+                </div>
+            `).join("");
     } catch (e) {}
 }
 
