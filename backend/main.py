@@ -3,6 +3,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from database import Base, engine
 from api.router import api_router
@@ -31,6 +32,7 @@ async def startup():
     Base.metadata.create_all(bind=engine)
 
 app.include_router(api_router, prefix="/api")
+app.mount("/", StaticFiles(directory="../frontend", html=True), name="frontend")
 
 @app.get("/")
 def root():

@@ -1,8 +1,15 @@
+/* ==========================================================================
+   공통 설정
+   ========================================================================== */
+
 const API_BASE = "http://localhost:8000/api";
 let currentOutput = null;
 let currentTab = "blog";
 
-// 회원가입
+/* ==========================================================================
+   인증 - 회원가입 / 로그인
+   ========================================================================== */
+
 async function register() {
     const email = document.getElementById("email").value;
     const nickname = document.getElementById("nickname").value;
@@ -14,10 +21,13 @@ async function register() {
         body: JSON.stringify({ email, nickname, password })
     });
     const data = await res.json();
-    document.getElementById("message").innerText = data.message || data.detail;
+    if (res.ok) {
+        window.location.href = "/html/login.html";
+    } else {
+        document.getElementById("message").innerText = data.detail || "회원가입에 실패했습니다.";
+    }
 }
 
-// 로그인
 async function login() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
@@ -28,10 +38,18 @@ async function login() {
         body: JSON.stringify({ email, password })
     });
     const data = await res.json();
-    document.getElementById("message").innerText = data.message || data.detail;
+    if (res.ok && data.access_token) {
+        localStorage.setItem("token", data.access_token);
+        window.location.href = "/html/generate.html";
+    } else {
+        document.getElementById("message").innerText = data.detail || "로그인에 실패했습니다.";
+    }
 }
 
-// 콘텐츠 생성
+/* ==========================================================================
+   콘텐츠 생성
+   ========================================================================== */
+
 async function generateContent() {
     console.log("1. 함수 시작");
     const body = {
@@ -78,7 +96,10 @@ async function generateContent() {
     }
 }
 
-// 탭 전환
+/* ==========================================================================
+   결과 탭
+   ========================================================================== */
+
 function showTab(tab) {
     currentTab = tab;
     const content = document.getElementById("tab-content");
@@ -96,15 +117,23 @@ function showTab(tab) {
     }
 }
 
-// 복사
 function copyContent() {
     const text = document.getElementById("tab-content").innerText;
     navigator.clipboard.writeText(text);
     alert("복사 완료!");
 }
 
-// 히스토리 불러오기
+/* ==========================================================================
+   히스토리
+   ========================================================================== */
+
 async function loadHistory() {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    const res = await fetch(`${API_BASE}/history`, {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
     const list = document.getElementById("history-list");
     if (!list) return;
 
@@ -121,14 +150,138 @@ async function loadHistory() {
     } catch (e) {}
 }
 
-// 히스토리 삭제
 async function deleteHistory(id) {
-    await fetch(`${API_BASE}/history/${id}`, { method: "DELETE" });
+    const token = localStorage.getItem("token");
+    await fetch(`${API_BASE}/history/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+    });
     loadHistory();
 }
 
-window.onload = function() {
-    if (window.location.pathname.includes("mypage")) {
-        loadHistory();
+/* ==========================================================================
+   generate.html - 업종 프리셋
+   ========================================================================== */
+
+function toggleCustomBusiness() {
+    const select = document.getElementById('business_type_select');
+    const input = document.getElementById('business_type');
+
+    if (select.value === 'custom') {
+        input.classList.remove('hidden');
+        input.value = '';
+        input.focus();
+    } else {
+        input.classList.add('hidden');
+        input.value = select.value;
     }
-};
+}
+
+/* ==========================================================================
+   generate.html - 탭 UI 전환
+   ========================================================================== */
+
+function switchUiTab(tabName) {
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => {
+        btn.classList.remove('bg-navy', 'text-white', 'active-tab');
+        btn.classList.add('text-gray-500', 'hover:bg-gray-100', 'hover:text-navy');
+    });
+
+    const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+    activeBtn.classList.remove('text-gray-500', 'hover:bg-gray-100', 'hover:text-navy');
+    activeBtn.classList.add('bg-navy', 'text-white', 'active-tab');
+
+    if (typeof showTab === 'function') {
+        showTab(tabName);
+    }
+}
+
+/* ==========================================================================
+   generate.html - 생성 버튼 (로딩 → 결과 표시)
+   ========================================================================== */
+
+async function startGeneration() {
+    const shopName = document.getElementById('shop_name').value;
+    const region = document.getElementById('region').value;
+    const keyword = document.getElementById('keyword').value;
+
+    const typeSelect = document.getElementById('business_type_select');
+    const typeInput = document.getElementById('business_type');
+    if (typeSelect.value !== 'custom' && typeSelect.value !== '') {
+        typeInput.value = typeSelect.value;
+    }
+
+    if (!shopName || !typeInput.value || !region || !keyword) {
+        alert("가게 이름, 업종, 지역, 키워드는 필수 입력 사항입니다!");
+        return;
+    }
+
+    document.getElementById('empty-state').classList.add('hidden');
+    document.getElementById('loading-state').classList.remove('hidden');
+    document.getElementById('tab-content').innerText = '';
+
+    const generateBtn = document.getElementById('generate-btn');
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '생성 중... ⏳';
+
+    try {
+        await generateContent();
+    } catch (error) {
+        console.error(error);
+        alert("콘텐츠 생성 중 오류가 발생했습니다.");
+    } finally {
+        document.getElementById('loading-state').classList.add('hidden');
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = `<span>마케팅 콘텐츠 생성하기</span><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>`;
+
+        const copyBtn = document.getElementById('copy-btn');
+        const regenBtn = document.getElementById('regen-btn');
+        copyBtn.disabled = false;
+        regenBtn.disabled = false;
+        copyBtn.className = "flex-1 bg-sand text-navy font-black py-4 rounded-xl hover:bg-camel hover:text-white transition shadow-md flex justify-center items-center gap-2 border-b-4 border-camel active:translate-y-1 active:border-b-0";
+        regenBtn.className = "flex-none bg-white border-2 border-gray-200 text-gray-600 font-bold px-6 py-4 rounded-xl hover:bg-gray-50 transition active:translate-y-1";
+    }
+}
+
+/* ==========================================================================
+   index.html - 배경 이미지 슬라이더
+   ========================================================================== */
+
+function initSlider() {
+    const images = document.querySelectorAll('.slider-img');
+    if (images.length === 0) return;
+
+    let currentIndex = 0;
+    setInterval(() => {
+        images[currentIndex].classList.remove('opacity-100');
+        images[currentIndex].classList.add('opacity-0');
+        currentIndex = (currentIndex + 1) % images.length;
+        images[currentIndex].classList.remove('opacity-0');
+        images[currentIndex].classList.add('opacity-100');
+    }, 4000);
+}
+
+/* ==========================================================================
+   mypage.html - 로그아웃 / 히스토리 상세
+   ========================================================================== */
+
+function logout() {
+    if (confirm("로그아웃 하시겠습니까?")) {
+        localStorage.removeItem("token");
+        window.location.href = "/index.html";
+    }
+}
+
+function viewHistoryDetail() {
+    alert("히스토리 상세 보기 기능입니다.");
+}
+
+/* ==========================================================================
+   페이지 로드
+   ========================================================================== */
+
+window.addEventListener("DOMContentLoaded", () => {
+    initSlider();
+    loadHistory();
+});
