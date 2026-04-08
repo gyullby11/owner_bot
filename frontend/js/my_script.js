@@ -51,9 +51,17 @@ async function login() {
    ========================================================================== */
 
 async function generateContent() {
+    const typeSelect = document.getElementById("business_type_select");
+    const typeInput = document.getElementById("business_type");
+    
+    // 업종 값 처리
+    if (typeSelect && typeSelect.value !== 'custom' && typeSelect.value !== '') {
+        typeInput.value = typeSelect.value;
+    }
+
     const body = {
         shop_name: document.getElementById("shop_name").value,
-        business_type: document.getElementById("business_type").value,
+        business_type: typeInput ? typeInput.value : "",
         region: document.getElementById("region").value,
         keyword: document.getElementById("keyword").value,
         feature: document.getElementById("feature").value,
@@ -86,7 +94,6 @@ async function generateContent() {
 
     } catch (err) {
         console.error("에러:", err);
-        alert("서버에 연결할 수 없습니다.");
     }
 }
 
@@ -238,7 +245,6 @@ async function startGeneration() {
         await generateContent();
     } catch (error) {
         console.error(error);
-        alert("콘텐츠 생성 중 오류가 발생했습니다.");
     } finally {
         document.getElementById('loading-state').classList.add('hidden');
         generateBtn.disabled = false;
