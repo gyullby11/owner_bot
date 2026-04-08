@@ -32,12 +32,6 @@ async def startup():
     Base.metadata.create_all(bind=engine)
 
 app.include_router(api_router, prefix="/api")
-app.mount("/frontend", StaticFiles(directory="../frontend"), name="frontend")
-
-
-@app.get("/")
-def root():
-    return {"message": "사장봇 API 서버 정상 작동 중"}
 
 @app.get("/health")
 def health():
