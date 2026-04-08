@@ -102,7 +102,7 @@
                     </div>
                 </div>
 
-                <button id="generate-btn" onclick="startGeneration()" class="w-full bg-navy text-white font-black text-xl py-4 md:py-5 rounded-2xl hover:bg-steel transition shadow-xl hover:shadow-2xl mt-8 border-b-4 border-steel active:border-b-0 active:translate-y-1 flex items-center justify-center gap-2">
+                <button type="button" id="generate-btn" onclick="startGeneration()" class="w-full bg-navy text-white font-black text-xl py-4 md:py-5 rounded-2xl hover:bg-steel transition shadow-xl hover:shadow-2xl mt-8 border-b-4 border-steel active:border-b-0 active:translate-y-1 flex items-center justify-center gap-2">
                     <span>마케팅 콘텐츠 생성하기</span>
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </button>
@@ -134,12 +134,11 @@
                 <div id="tab-content" class="flex-grow bg-white rounded-2xl p-6 overflow-y-auto border border-gray-200 text-gray-700 text-lg leading-relaxed whitespace-pre-wrap font-medium shadow-inner"></div>
 
                 <div class="mt-6 flex gap-3">
-                    <button id="copy-btn" onclick="copyContent()" disabled class="flex-1 bg-gray-200 text-gray-400 font-bold py-4 rounded-xl transition flex justify-center items-center gap-2 disabled:cursor-not-allowed">
+                    <button type="button" id="copy-btn" onclick="copyContent()" disabled class="flex-1 bg-gray-200 text-gray-400 font-bold py-4 rounded-xl transition flex justify-center items-center gap-2 disabled:cursor-not-allowed">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                         결과물 복사하기
                     </button>
-                    <button id="regen-btn" onclick="startGeneration()" disabled class="flex-none bg-gray-200 text-gray-400 font-bold px-6 py-4 rounded-xl transition disabled:cursor-not-allowed">
-                        다시 만들기 🔄
+                    <button type="button" id="regen-btn" onclick="startGeneration()" disabled class="flex-none bg-gray-200 text-gray-400 font-bold px-6 py-4 rounded-xl transition disabled:cursor-not-allowed">
                     </button>
                 </div>
             </div>

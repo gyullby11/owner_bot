@@ -37,4 +37,7 @@ app.include_router(api_router, prefix="/api")
 def health():
     return {"status": "ok"}
 
-app.mount("/", StaticFiles(directory="../frontend", html=True), name="frontend")
+# frontend/ 폴더를 루트(/)에 마운트
+# html=True 옵션으로 index.html 자동 서빙 + /html/, /css/, /js/ 경로 모두 동작
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
