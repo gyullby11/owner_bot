@@ -24,7 +24,7 @@ def get_optional_user(
     payload = user_service.decode_token(token)
     if not payload:
         return None
-    return db.query(User).filter(User.id == payload.get("sub")).first()
+    return db.query(User).filter(User.id == int(payload.get("sub"))).first()
 
 
 @router.post("", response_model=None)
