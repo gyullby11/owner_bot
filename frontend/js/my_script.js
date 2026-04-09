@@ -278,18 +278,35 @@ function initSlider() {
 }
 
 /* ==========================================================================
-   mypage.html - 로그아웃 / 히스토리 상세
+   mypage.html - 내 정보 로드 / 로그아웃
    ========================================================================== */
+
+async function loadMyInfo() {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/mypage/me`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const nicknameEl = document.getElementById("user-nickname");
+        const creditsEl  = document.getElementById("user-credits");
+        const planEl     = document.getElementById("user-plan");
+
+        if (nicknameEl) nicknameEl.innerText = data.nickname || data.email;
+        if (creditsEl)  creditsEl.innerText  = `${data.credits}회`;
+        if (planEl)     planEl.innerText      = data.plan === "free" ? "무료 플랜" : "구독 플랜";
+    } catch (e) {}
+}
 
 function logout() {
     if (confirm("로그아웃 하시겠습니까?")) {
         localStorage.removeItem("token");
         window.location.href = "/index.html";
     }
-}
-
-function viewHistoryDetail() {
-    alert("히스토리 상세 보기 기능입니다.");
 }
 
 /* ==========================================================================
@@ -299,4 +316,5 @@ function viewHistoryDetail() {
 window.addEventListener("DOMContentLoaded", () => {
     initSlider();
     loadHistory();
+    loadMyInfo();
 });
