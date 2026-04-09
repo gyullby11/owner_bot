@@ -41,6 +41,10 @@ async def generate(
     input_data = body.model_dump()
     output = await service.stream_content(input_data)
 
+    # JSON 파싱 실패 시 에러 반환
+    if "error" in output:
+        raise HTTPException(status_code=500, detail="콘텐츠 생성 중 오류가 발생했습니다. 다시 시도해 주세요.")
+
     history = GenerationHistory(
         user_id=current_user.id if current_user else None,
         shop_name=body.shop_name,
