@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from modules.user.schemas import UserRegister, UserLogin, Token, UserOut
 from modules.user.models import User
-from modules.history.models import CreditTransaction
+from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user import crud, service
 
 router = APIRouter()
@@ -38,7 +38,7 @@ def signup(body: UserRegister, db: Session = Depends(get_db)):
     db.add(CreditTransaction(
         user_id=user.id,
         amount=3,
-        type="earn",
+        type=CreditTransactionType.earn,
         note="가입 보너스",
     ))
     db.commit()

@@ -6,7 +6,7 @@ from database import get_db
 from modules.generate.schemas import GenerateRequest
 from modules.generate.models import GenerationHistory
 from modules.generate import service, crud
-from modules.history.models import CreditTransaction
+from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user.models import User
 from modules.user import service as user_service
 
@@ -65,7 +65,7 @@ async def generate(
         db.add(CreditTransaction(
             user_id=current_user.id,
             amount=-1,
-            type="use",
+            type=CreditTransactionType.use,
             note="콘텐츠 생성",
         ))
 
