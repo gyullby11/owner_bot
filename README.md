@@ -1,7 +1,15 @@
 # owner_bot
 # 사장봇 (SajangBot)
 
+📌 프론트 작업 규칙
 
+1. generate.html, my_script.js 수정할 때
+   → 동시수정시 충돌이 날 수 있어요.
+
+2. PR 올리기 전에
+   → 로컬에서 git pull origin dev 먼저 하기
+   → 충돌 있으면 직접 해결 후 PR 올리기
+   
 #서비스명: 사장봇 (SajangBot)
 
 #GitHub 레포 : owner_bot

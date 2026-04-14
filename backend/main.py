@@ -3,7 +3,9 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from database import Base, engine
 from api.router import api_router
 
@@ -32,10 +34,11 @@ async def startup():
 
 app.include_router(api_router, prefix="/api")
 
-@app.get("/")
-def root():
-    return {"message": "사장봇 API 서버 정상 작동 중"}
-
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+# frontend/ 폴더를 루트(/)에 마운트
+# html=True 옵션으로 index.html 자동 서빙 + /html/, /css/, /js/ 경로 모두 동작
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

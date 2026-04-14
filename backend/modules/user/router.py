@@ -20,8 +20,7 @@ def get_current_user(
     payload = service.decode_token(token)
     if not payload:
         raise HTTPException(status_code=401, detail="토큰이 유효하지 않습니다.")
-
-    user = db.query(User).filter(User.id == payload.get("sub")).first()
+    user = db.query(User).filter(User.id == int(payload.get("sub"))).first()
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="사용자를 찾을 수 없습니다.")
 

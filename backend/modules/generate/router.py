@@ -12,6 +12,20 @@ from modules.user.router import get_current_user
 from modules.history.models import CreditTransaction
 
 router = APIRouter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+
+
+def get_optional_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    """토큰이 있으면 User 반환, 없으면 None 반환 (비로그인 허용)"""
+    if not token:
+        return None
+    payload = user_service.decode_token(token)
+    if not payload:
+        return None
+    return db.query(User).filter(User.id == int(payload.get("sub"))).first()
 
 
 @router.post("", response_model=None)
@@ -31,6 +45,7 @@ async def generate(
         )
 
     input_data = body.model_dump()
+    output = await service.stream_content(input_data)
 
     # 2) 콘텐츠 생성
     full_output = {}
@@ -60,7 +75,7 @@ async def generate(
         feature=body.feature,
         tone=body.tone,
         input_payload=json.dumps(input_data, ensure_ascii=False),
-        output_payload=json.dumps(full_output, ensure_ascii=False),
+        output_payload=json.dumps(output, ensure_ascii=False),
         credits_used=1,
     )
     db.add(history)
