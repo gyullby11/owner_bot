@@ -38,7 +38,7 @@
         <div class="flex gap-4 items-center">
             <div class="hidden md:flex items-center gap-2 bg-white px-4 py-1.5 rounded-full border border-gray-200 shadow-sm mr-2">
                 <span class="text-sm font-bold text-gray-500">잔여 크레딧:</span>
-                <span class="text-sm font-black text-navy">3회</span>
+                <span class="text-sm font-black text-navy credits-display">3회</span>
             </div>
             <a href="mypage.html" class="text-steel font-bold hover:text-navy transition px-4 py-2">마이페이지</a>
         </div>
@@ -113,10 +113,10 @@
             <div id="result-container" class="glass-card p-6 md:p-8 rounded-3xl shadow-lg border border-gray-100 flex-grow flex flex-col relative h-[600px] lg:h-auto min-h-[600px]">
 
                 <div class="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide border-b border-gray-200">
-                    <button onclick="switchUiTab('blog')" id="tab-btn-blog" class="tab-btn active-tab px-6 py-3 rounded-t-xl font-bold text-base whitespace-nowrap transition-all bg-navy text-white">📝 블로그 글</button>
-                    <button onclick="switchUiTab('review')" id="tab-btn-review" class="tab-btn px-6 py-3 rounded-t-xl font-bold text-base text-gray-500 hover:bg-gray-100 hover:text-navy whitespace-nowrap transition-all">⭐ 플레이스 리뷰</button>
-                    <button onclick="switchUiTab('shorts')" id="tab-btn-shorts" class="tab-btn px-6 py-3 rounded-t-xl font-bold text-base text-gray-500 hover:bg-gray-100 hover:text-navy whitespace-nowrap transition-all">📱 쇼츠 대본</button>
-                    <button onclick="switchUiTab('thumbnail')" id="tab-btn-thumbnail" class="tab-btn px-6 py-3 rounded-t-xl font-bold text-base text-gray-500 hover:bg-gray-100 hover:text-navy whitespace-nowrap transition-all">🎨 썸네일 문구</button>
+                    <button onclick="showTab('blog')" id="tab-btn-blog" class="tab-btn active-tab px-6 py-3 rounded-t-xl font-bold text-base whitespace-nowrap transition-all bg-navy text-white">📝 블로그 글</button>
+                    <button onclick="showTab('review')" id="tab-btn-review" class="tab-btn px-6 py-3 rounded-t-xl font-bold text-base text-gray-500 hover:bg-gray-100 hover:text-navy whitespace-nowrap transition-all">⭐ 플레이스 리뷰</button>
+                    <button onclick="showTab('shorts')" id="tab-btn-shorts" class="tab-btn px-6 py-3 rounded-t-xl font-bold text-base text-gray-500 hover:bg-gray-100 hover:text-navy whitespace-nowrap transition-all">📱 쇼츠 대본</button>
+                    <button onclick="showTab('thumbnail')" id="tab-btn-thumbnail" class="tab-btn px-6 py-3 rounded-t-xl font-bold text-base text-gray-500 hover:bg-gray-100 hover:text-navy whitespace-nowrap transition-all">🎨 썸네일 문구</button>
                 </div>
 
                 <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-center p-8 bg-white/80 rounded-b-3xl z-10 pt-16">
@@ -145,6 +145,8 @@
         </section>
     </main>
 
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/my_script.js"></script>
 </body>
 </html>

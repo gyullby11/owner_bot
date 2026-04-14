@@ -31,9 +31,12 @@ async function apiRequest(path, options = {}) {
         : rawText;
 
     if (!response.ok) {
-        const detail = typeof payload === "object" && payload !== null
+        let detail = typeof payload === "object" && payload !== null
             ? payload.detail
             : payload;
+        if (Array.isArray(detail)) {
+            detail = detail.map(e => e.msg || e).join(", ");
+        }
         throw new Error(detail || "요청 처리 중 오류가 발생했습니다.");
     }
 

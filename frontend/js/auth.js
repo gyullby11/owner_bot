@@ -84,31 +84,37 @@ function logout() {
 
 // 네비게이션 로그인 상태 반영
 function initAuthNav() {
-    const loginLink = document.getElementById("nav-login");
-    const logoutBtn = document.getElementById("nav-logout");
-    if (!loginLink && !logoutBtn) return;
+    const isLoggedIn = !!getAccessToken();
 
-    if (getAccessToken()) {
+    // 로그인/회원가입 링크 (비로그인 전용)
+    const loginLink = document.getElementById("nav-login");
+    const registerLink = document.getElementById("nav-register");
+    // 로그인 후 메뉴 (로그인 전용)
+    const logoutBtn = document.getElementById("nav-logout");
+    const mypageLink = document.getElementById("nav-mypage");
+    const mypageLink2 = document.getElementById("nav-mypage2");
+
+    const ctaGuest = document.getElementById("cta-guest");
+
+    if (isLoggedIn) {
         if (loginLink) loginLink.style.display = "none";
+        if (registerLink) registerLink.style.display = "none";
         if (logoutBtn) logoutBtn.style.display = "inline";
+        if (mypageLink) mypageLink.style.display = "inline";
+        if (mypageLink2) mypageLink2.style.display = "inline";
+        if (ctaGuest) ctaGuest.style.display = "none";
     } else {
         if (loginLink) loginLink.style.display = "inline";
+        if (registerLink) registerLink.style.display = "inline";
         if (logoutBtn) logoutBtn.style.display = "none";
+        if (mypageLink) mypageLink.style.display = "none";
+        if (mypageLink2) mypageLink2.style.display = "none";
+        if (ctaGuest) ctaGuest.style.display = "inline-flex";
     }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
     initAuthNav();
-
-    const loginForm = document.getElementById("login-form");
-    if (loginForm) {
-        loginForm.addEventListener("submit", handleLogin);
-    }
-
-    const registerForm = document.getElementById("register-form");
-    if (registerForm) {
-        registerForm.addEventListener("submit", handleRegister);
-    }
 
     const logoutBtn = document.getElementById("nav-logout");
     if (logoutBtn) {

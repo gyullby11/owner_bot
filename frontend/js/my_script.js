@@ -2,49 +2,9 @@
    공통 설정
    ========================================================================== */
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = "/api";
 let currentOutput = null;
 let currentTab = "blog";
-
-/* ==========================================================================
-   인증 - 회원가입 / 로그인
-   ========================================================================== */
-
-async function register() {
-    const email = document.getElementById("email").value;
-    const nickname = document.getElementById("nickname").value;
-    const password = document.getElementById("password").value;
-
-    const res = await fetch(`${API_BASE}/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, nickname, password })
-    });
-    const data = await res.json();
-    if (res.ok) {
-        window.location.href = "/html/login.html";
-    } else {
-        document.getElementById("message").innerText = data.detail || "회원가입에 실패했습니다.";
-    }
-}
-
-async function login() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    const res = await fetch(`${API_BASE}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (res.ok && data.access_token) {
-        localStorage.setItem("token", data.access_token);
-        window.location.href = "/html/generate.html";
-    } else {
-        document.getElementById("message").innerText = data.detail || "로그인에 실패했습니다.";
-    }
-}
 
 /* ==========================================================================
    콘텐츠 생성
@@ -68,7 +28,7 @@ async function generateContent() {
         tone: document.getElementById("tone").value,
     };
 
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("access_token");
     const headers = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -87,6 +47,11 @@ async function generateContent() {
         }
 
         currentOutput = data.output;
+
+        if (data.credits_remaining !== null && data.credits_remaining !== undefined) {
+            const creditEl = document.querySelector(".credits-display");
+            if (creditEl) creditEl.textContent = `${data.credits_remaining}회`;
+        }
 
         document.getElementById("empty-state").classList.add("hidden");
         document.getElementById("loading-state").classList.add("hidden");
@@ -141,38 +106,144 @@ function copyContent() {
    ========================================================================== */
 
 async function loadHistory() {
-    const token = localStorage.getItem("token");
     const list = document.getElementById("history-list");
     if (!list) return;
+    const token = localStorage.getItem("access_token");
     if (!token) {
-        list.innerHTML = "<p>로그인 후 이용할 수 있습니다.</p>";
+        list.innerHTML = `<p class="text-gray-500">로그인 후 이용할 수 있습니다.</p>`;
         return;
     }
 
     try {
-        const res = await fetch(`${API_BASE}/history`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (!res.ok) return;
-        const data = await res.json();
+        const data = await apiRequest("/history");
+        const countEl = document.getElementById("history-count");
+        if (countEl) countEl.textContent = `총 ${data.length}건`;
+
         list.innerHTML = data.length === 0
-            ? "<p>생성 이력이 없습니다.</p>"
-            : data.map(h => `
-                <div style="padding:10px;border-bottom:1px solid #eee;">
-                    <p>${h.shop_name} · ${h.keyword} · ${h.created_at}</p>
-                    <button onclick="deleteHistory(${h.id})">삭제</button>
+            ? `<p class="text-gray-500">생성 이력이 없습니다.</p>`
+            : data.map(h => {
+                const date = new Date(h.created_at).toLocaleString('ko-KR');
+                return `
+                <div class="p-4 rounded-xl border border-gray-200 hover:border-navy transition bg-white/50">
+                    <div class="flex justify-between items-start gap-4">
+                        <div class="flex-grow">
+                            <p class="font-bold text-navy">${h.shop_name} <span class="text-xs text-gray-400 font-medium">· ${h.business_type}</span></p>
+                            <p class="text-sm text-gray-500 mt-1">🔑 ${h.keyword} · 📍 ${h.region}</p>
+                            <p class="text-xs text-gray-400 mt-1">${date} · ${h.credits_used}크레딧 사용</p>
+                        </div>
+                        <div class="flex gap-2 flex-shrink-0">
+                            <button onclick="viewHistoryDetail(${h.id})" class="px-3 py-1.5 text-xs font-bold bg-navy text-white rounded-lg hover:bg-steel transition">상세</button>
+                            <button onclick="regenerateHistory(${h.id})" class="px-3 py-1.5 text-xs font-bold bg-sand text-navy rounded-lg hover:bg-camel hover:text-white transition">재생성</button>
+                            <button onclick="deleteHistory(${h.id})" class="px-3 py-1.5 text-xs font-bold bg-gray-100 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-500 transition">삭제</button>
+                        </div>
+                    </div>
                 </div>
-            `).join("");
-    } catch (e) {}
+            `;
+            }).join("");
+    } catch (e) {
+        console.error("히스토리 로드 실패", e);
+    }
 }
 
 async function deleteHistory(id) {
-    const token = localStorage.getItem("token");
-    await fetch(`${API_BASE}/history/${id}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
-    });
-    loadHistory();
+    if (!confirm("이 기록을 삭제하시겠습니까?")) return;
+    try {
+        await apiRequest(`/history/${id}`, { method: "DELETE" });
+        loadHistory();
+    } catch (e) {
+        alert(e.message || "삭제에 실패했습니다.");
+    }
+}
+
+async function viewHistoryDetail(id) {
+    try {
+        const h = await apiRequest(`/history/${id}`);
+        const modal = document.getElementById("history-modal");
+        const title = document.getElementById("modal-title");
+        const body = document.getElementById("modal-body");
+        title.textContent = `${h.shop_name} - ${h.keyword}`;
+
+        let output;
+        try { output = JSON.parse(h.output_payload); } catch { output = null; }
+
+        let text = `[가게] ${h.shop_name} (${h.business_type})\n[지역] ${h.region}\n[키워드] ${h.keyword}\n`;
+        if (h.feature) text += `[특징] ${h.feature}\n`;
+        text += `[톤] ${h.tone}\n\n`;
+
+        if (output) {
+            if (output.blog) {
+                const b = output.blog;
+                text += `📝 [블로그]\n${b.title || ""}\n\n${b.body || ""}\n\n${b.hashtags || ""}\n\n`;
+            }
+            if (output.review) text += `⭐ [리뷰]\n${output.review}\n\n`;
+            if (output.shorts) {
+                const s = output.shorts;
+                text += `📱 [쇼츠]\n${s.cut1 || ""}\n${s.cut2 || ""}\n${s.cut3 || ""}\n\n`;
+            }
+            if (output.thumbnail) {
+                const t = Array.isArray(output.thumbnail) ? output.thumbnail.join("\n") : output.thumbnail;
+                text += `🎨 [썸네일]\n${t}\n`;
+            }
+        } else {
+            text += h.output_payload;
+        }
+
+        body.textContent = text;
+        modal.classList.remove("hidden");
+    } catch (e) {
+        alert(e.message || "상세 조회에 실패했습니다.");
+    }
+}
+
+function closeHistoryDetail() {
+    const modal = document.getElementById("history-modal");
+    if (modal) modal.classList.add("hidden");
+}
+
+async function regenerateHistory(id) {
+    if (!confirm("이 기록으로 재생성하시겠습니까? 크레딧 1회가 차감됩니다.")) return;
+    try {
+        await apiRequest(`/history/${id}/regenerate`, { method: "POST" });
+        alert("재생성이 완료되었습니다.");
+        loadHistory();
+        loadMyPage();
+    } catch (e) {
+        alert(e.message || "재생성에 실패했습니다.");
+    }
+}
+
+async function loadCreditHistory() {
+    const list = document.getElementById("credits-list");
+    if (!list) return;
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    try {
+        const data = await apiRequest("/mypage/credits");
+        const creditEl = document.getElementById("user-credits");
+        if (creditEl) creditEl.textContent = data.credits;
+
+        const tx = data.transactions || [];
+        list.innerHTML = tx.length === 0
+            ? `<p class="text-gray-500">사용 내역이 없습니다.</p>`
+            : tx.map(t => {
+                const date = new Date(t.created_at).toLocaleString('ko-KR');
+                const isPlus = t.amount > 0;
+                const color = isPlus ? "text-green-600" : "text-red-500";
+                const sign = isPlus ? "+" : "";
+                return `
+                <div class="flex justify-between items-center py-2 px-3 rounded-lg hover:bg-gray-50">
+                    <div>
+                        <span class="font-bold text-navy">${t.type}</span>
+                        ${t.note ? `<span class="text-gray-500 ml-2">${t.note}</span>` : ""}
+                        <p class="text-xs text-gray-400">${date}</p>
+                    </div>
+                    <span class="font-black ${color}">${sign}${t.amount}</span>
+                </div>`;
+            }).join("");
+    } catch (e) {
+        console.error("크레딧 내역 로드 실패", e);
+    }
 }
 
 /* ==========================================================================
@@ -208,9 +279,6 @@ function switchUiTab(tabName) {
     activeBtn.classList.remove('text-gray-500', 'hover:bg-gray-100', 'hover:text-navy');
     activeBtn.classList.add('bg-navy', 'text-white', 'active-tab');
 
-    if (typeof showTab === 'function') {
-        showTab(tabName);
-    }
 }
 
 /* ==========================================================================
@@ -278,25 +346,69 @@ function initSlider() {
 }
 
 /* ==========================================================================
+   mypage.html - 유저 정보 / 크레딧 로드
+   ========================================================================== */
+
+async function loadMyPage() {
+    if (!document.getElementById("user-info")) return;
+
+    if (!localStorage.getItem("access_token")) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    try {
+        const user = await apiRequest("/auth/me");
+
+        const avatarEl = document.getElementById("user-avatar");
+        if (avatarEl) avatarEl.textContent = (user.nickname || user.email)[0];
+
+        const nameEl = document.getElementById("user-name");
+        if (nameEl) nameEl.textContent = `${user.nickname || "사용자"} 사장님`;
+
+        const emailEl = document.getElementById("user-email");
+        if (emailEl) emailEl.textContent = user.email;
+
+        const creditEl = document.getElementById("user-credits");
+        if (creditEl) creditEl.textContent = user.credits;
+
+    } catch (e) {
+        console.error("유저 정보 로드 실패", e);
+    }
+}
+
+/* ==========================================================================
    mypage.html - 로그아웃 / 히스토리 상세
    ========================================================================== */
 
 function logout() {
     if (confirm("로그아웃 하시겠습니까?")) {
-        localStorage.removeItem("token");
-        window.location.href = "/index.html";
+        localStorage.removeItem("access_token");
+        window.location.href = "index.html";
     }
-}
-
-function viewHistoryDetail() {
-    alert("히스토리 상세 보기 기능입니다.");
 }
 
 /* ==========================================================================
    페이지 로드
    ========================================================================== */
 
+async function loadCreditsDisplay() {
+    const el = document.querySelector(".credits-display");
+    if (!el) return;
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    try {
+        const user = await apiRequest("/auth/me");
+        el.textContent = `${user.credits}회`;
+    } catch (e) {}
+}
+
 window.addEventListener("DOMContentLoaded", () => {
     initSlider();
-    loadHistory();
+    if (document.getElementById("history-list")) loadHistory();
+    if (document.getElementById("user-info")) {
+        loadMyPage();
+        loadCreditHistory();
+    }
+    loadCreditsDisplay();
 });
