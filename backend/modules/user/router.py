@@ -50,7 +50,6 @@ db.add(CreditTransaction(
     db.refresh(user)
     return user
 
-
 # 로그인
 # Swagger Authorize 창과 맞추기 위해 form-data(username, password) 방식 사용
 @router.post("/login", response_model=Token)
