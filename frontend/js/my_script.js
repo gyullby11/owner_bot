@@ -32,18 +32,26 @@ async function login() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
+    // form-data 방식으로 변경
+    const formData = new URLSearchParams();
+    formData.append("username", email);  // OAuth2는 username 키 사용
+    formData.append("password", password);
+
     const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData
     });
     const data = await res.json();
     if (res.ok && data.access_token) {
         localStorage.setItem("token", data.access_token);
         window.location.href = "/html/generate.html";
     } else {
-        document.getElementById("message").innerText = data.detail || "로그인에 실패했습니다.";
-    }
+       const detail = Array.isArray(data.detail)
+          ? data.detail.map(e => e.msg).join(", ")
+          : data.detail || "로그인에 실패했습니다.";
+       document.getElementById("message").innerText = detail;
+   }
 }
 
 /* ==========================================================================
@@ -87,7 +95,11 @@ async function generateContent() {
         }
 
         currentOutput = data.output;
-
+        
+        if (data.credits_remaining !== null && data.credits_remaining !== undefined) {
+            const headerCreditsEl = document.getElementById("header-credits");
+            if (headerCreditsEl) headerCreditsEl.innerText = `${data.credits_remaining}회`;
+        }
         document.getElementById("empty-state").classList.add("hidden");
         document.getElementById("loading-state").classList.add("hidden");
         showTab("blog");
@@ -295,10 +307,12 @@ async function loadMyInfo() {
         const nicknameEl = document.getElementById("user-nickname");
         const creditsEl  = document.getElementById("user-credits");
         const planEl     = document.getElementById("user-plan");
+        const headerCreditsEl = document.getElementById("header-credits");
 
         if (nicknameEl) nicknameEl.innerText = data.nickname || data.email;
         if (creditsEl)  creditsEl.innerText  = `${data.credits}회`;
         if (planEl)     planEl.innerText      = data.plan === "free" ? "무료 플랜" : "구독 플랜";
+        if (headerCreditsEl) headerCreditsEl.innerText = `${data.credits}회`;
     } catch (e) {}
 }
 
