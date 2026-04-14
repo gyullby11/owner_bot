@@ -44,7 +44,7 @@ async def generate(
     input_data = body.model_dump()
     output = await service.stream_content(input_data)
 
-    if "error" in output:
+    if "error" in output or "blog" not in output:
         raise HTTPException(status_code=500, detail="콘텐츠 생성 중 오류가 발생했습니다. 다시 시도해 주세요.")
 
     history = GenerationHistory(
