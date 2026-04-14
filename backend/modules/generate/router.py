@@ -35,35 +35,20 @@ def get_optional_user(
 async def generate(
     body: GenerateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_optional_user),
 ):
-    if current_user.credits is None:
-        current_user.credits = 0
-
-    if current_user.credits <= 0:
-        raise HTTPException(
-            status_code=400,
-            detail="크레딧이 부족합니다. 마이페이지에서 크레딧을 확인해주세요.",
-        )
+    if current_user:
+        if current_user.credits <= 0:
+            raise HTTPException(status_code=402, detail="크레딧이 부족합니다. 충전 후 이용해 주세요.")
 
     input_data = body.model_dump()
-    full_output = {}
-    async for chunk_type, chunk_text in service.stream_content(input_data):
-        full_output.setdefault(chunk_type, "")
-        full_output[chunk_type] += chunk_text
+    output = await service.stream_content(input_data)
 
-    current_user.credits -= 1
-
-    credit_tx = CreditTransaction(
-        user_id=current_user.id,
-        amount=1,
-        type="use",
-        note="콘텐츠 생성 1회 사용",
-    )
-    db.add(credit_tx)
+    if "error" in output:
+        raise HTTPException(status_code=500, detail="콘텐츠 생성 중 오류가 발생했습니다. 다시 시도해 주세요.")
 
     history = GenerationHistory(
-        user_id=current_user.id,
+        user_id=current_user.id if current_user else None,
         shop_name=body.shop_name,
         business_type=body.business_type,
         region=body.region,
@@ -71,12 +56,11 @@ async def generate(
         feature=body.feature,
         tone=body.tone,
         input_payload=json.dumps(input_data, ensure_ascii=False),
-        output_payload=json.dumps(full_output, ensure_ascii=False),
+        output_payload=json.dumps(output, ensure_ascii=False),
         credits_used=1,
     )
     db.add(history)
 
-    # 로그인 사용자 크레딧 차감 및 거래 기록
     if current_user:
         current_user.credits -= 1
         db.add(CreditTransaction(
@@ -87,13 +71,10 @@ async def generate(
         ))
 
     db.commit()
-    db.refresh(history)
-    db.refresh(current_user)
 
     return {
         "message": "콘텐츠 생성 성공",
         "input": input_data,
-        "output": full_output,
-        "remaining_credits": current_user.credits,
-        "history_id": history.id,
+        "output": output,
+        "credits_remaining": current_user.credits if current_user else None,
     }
