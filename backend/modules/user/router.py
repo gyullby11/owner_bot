@@ -45,7 +45,7 @@ db.add(CreditTransaction(
             amount=3,
             type=CreditTransactionType.earn,
             note="가입 보너스",
-        )) dev
+        ))
     db.commit()
     db.refresh(user)
     return user
