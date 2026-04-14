@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+
 from database import get_db
-from modules.user.schemas import UserRegister, UserLogin, Token, UserOut
+from modules.user.schemas import UserRegister, Token, UserOut
 from modules.user.models import User
 from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user import crud, service
@@ -22,12 +23,16 @@ def get_current_user(
     user = db.query(User).filter(User.id == int(payload.get("sub"))).first()
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="사용자를 찾을 수 없습니다.")
+
     return user
 
 
 # 회원가입
 @router.post("/signup", response_model=UserOut, status_code=201)
-def signup(body: UserRegister, db: Session = Depends(get_db)):
+def signup(
+    body: UserRegister,
+    db: Session = Depends(get_db)
+):
     if crud.get_user_by_email(db, body.email):
         raise HTTPException(status_code=400, detail="이미 사용 중인 이메일입니다.")
 
@@ -45,13 +50,17 @@ def signup(body: UserRegister, db: Session = Depends(get_db)):
     db.refresh(user)
     return user
 
-
 # 로그인
+# Swagger Authorize 창과 맞추기 위해 form-data(username, password) 방식 사용
 @router.post("/login", response_model=Token)
-def login(body: UserLogin, db: Session = Depends(get_db)):
-    user = crud.get_user_by_email(db, body.email)
-    if not user or not service.verify_password(body.password, user.hashed_password):
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    user = crud.get_user_by_email(db, form_data.username)
+    if not user or not service.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 틀립니다.")
+
     if not user.is_active:
         raise HTTPException(status_code=403, detail="비활성화된 계정입니다.")
 
@@ -61,5 +70,7 @@ def login(body: UserLogin, db: Session = Depends(get_db)):
 
 # 내 정보 조회
 @router.get("/me", response_model=UserOut)
-def me(current_user: User = Depends(get_current_user)):
+def me(
+    current_user: User = Depends(get_current_user)
+):
     return current_user
