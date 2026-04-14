@@ -40,12 +40,12 @@ def signup(
     user = crud.create_user(db, body.email, hashed, body.nickname)
 
     # 가입 보너스 크레딧 거래 기록
-db.add(CreditTransaction(
-            user_id=user.id,
-            amount=3,
-            type=CreditTransactionType.earn,
-            note="가입 보너스",
-        ))
+    db.add(CreditTransaction(
+        user_id=user.id,
+        amount=3,
+        type=CreditTransactionType.earn,
+        note="가입 보너스",
+    ))
     db.commit()
     db.refresh(user)
     return user
