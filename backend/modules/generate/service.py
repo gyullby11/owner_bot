@@ -1,6 +1,6 @@
 import json
 import re
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, RateLimitError, AuthenticationError, OpenAIError
 from config import settings
 from modules.generate.prompt_builder import build_prompt
 
@@ -35,12 +35,19 @@ async def stream_content(data: dict) -> dict:
         tone=data.get("tone", "friendly")
     )
 
-    response = await client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.8,
-        max_tokens=2000,
-    )
+    try:
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.8,
+            max_tokens=2000,
+        )
+    except RateLimitError:
+        return {"error": "OpenAI 크레딧 부족 또는 요청 한도 초과"}
+    except AuthenticationError:
+        return {"error": "OpenAI API 키가 유효하지 않습니다"}
+    except OpenAIError as e:
+        return {"error": f"OpenAI 오류: {str(e)}"}
 
     raw = response.choices[0].message.content
 
@@ -50,16 +57,19 @@ async def stream_content(data: dict) -> dict:
         return result
 
     # 2차 시도 — 재요청 (JSON만 달라고 명시)
-    retry_response = await client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "user", "content": prompt},
-            {"role": "assistant", "content": raw},
-            {"role": "user", "content": "위 내용을 반드시 JSON 형식으로만 다시 출력해주세요. 다른 텍스트 없이 JSON만 출력하세요."}
-        ],
-        temperature=0.3,
-        max_tokens=2000,
-    )
+    try:
+        retry_response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "user", "content": prompt},
+                {"role": "assistant", "content": raw},
+                {"role": "user", "content": "위 내용을 반드시 JSON 형식으로만 다시 출력해주세요. 다른 텍스트 없이 JSON만 출력하세요."}
+            ],
+            temperature=0.3,
+            max_tokens=2000,
+        )
+    except OpenAIError:
+        return {"error": "JSON 파싱 실패"}
 
     retry_raw = retry_response.choices[0].message.content
     result = extract_json(retry_raw)
