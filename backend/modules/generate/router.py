@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 from database import get_db
 from modules.generate.schemas import GenerateRequest
 from modules.generate.models import GenerationHistory
-from modules.generate import service
+from modules.generate import service, crud
+from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user.models import User
 from modules.user.router import get_current_user
 from modules.user import service as user_service
@@ -74,6 +75,16 @@ async def generate(
         credits_used=1,
     )
     db.add(history)
+
+    # 로그인 사용자 크레딧 차감 및 거래 기록
+    if current_user:
+        current_user.credits -= 1
+        db.add(CreditTransaction(
+            user_id=current_user.id,
+            amount=-1,
+            type=CreditTransactionType.use,
+            note="콘텐츠 생성",
+        ))
 
     db.commit()
     db.refresh(history)

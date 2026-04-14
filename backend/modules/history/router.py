@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from modules.history import crud, service
 from modules.history.schemas import HistoryOut
-from modules.history.models import CreditTransaction
+from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user.models import User
 from modules.user.router import get_current_user
 from modules.generate.schemas import GenerateRequest
@@ -86,7 +86,7 @@ async def regenerate(
     db.add(CreditTransaction(
         user_id=current_user.id,
         amount=-1,
-        type="use",
+        type=CreditTransactionType.use,
         note="콘텐츠 재생성",
     ))
 

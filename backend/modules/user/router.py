@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from modules.user.schemas import UserRegister, Token, UserOut
 from modules.user.models import User
-from modules.history.models import CreditTransaction
+from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user import crud, service
 
 router = APIRouter()
@@ -40,14 +40,12 @@ def signup(
     user = crud.create_user(db, body.email, hashed, body.nickname)
 
     # 가입 보너스 크레딧 거래 기록
-    db.add(
-        CreditTransaction(
+db.add(CreditTransaction(
             user_id=user.id,
             amount=3,
-            type="earn",
+            type=CreditTransactionType.earn,
             note="가입 보너스",
-        )
-    )
+        )) dev
     db.commit()
     db.refresh(user)
     return user
