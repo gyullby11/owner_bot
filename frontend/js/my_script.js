@@ -22,7 +22,7 @@ async function register() {
     });
     const data = await res.json();
     if (res.ok) {
-        window.location.href = "/html/login.html";
+        window.location.href = "login.html";
     } else {
         document.getElementById("message").innerText = data.detail || "회원가입에 실패했습니다.";
     }
@@ -44,8 +44,8 @@ async function login() {
     });
     const data = await res.json();
     if (res.ok && data.access_token) {
-        localStorage.setItem("token", data.access_token);
-        window.location.href = "/html/generate.html";
+        localStorage.setItem("access_token", data.access_token);
+        window.location.href = "generate.html";
     } else {
        const detail = Array.isArray(data.detail)
           ? data.detail.map(e => e.msg).join(", ")
@@ -454,7 +454,6 @@ async function loadMyInfo() {
 
 function logout() {
     if (confirm("로그아웃 하시겠습니까?")) {
-        localStorage.removeItem("
         localStorage.removeItem("access_token");
         window.location.href = "index.html";
     }
