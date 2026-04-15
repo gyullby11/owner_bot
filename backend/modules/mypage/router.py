@@ -53,11 +53,11 @@ def charge_credits(
             detail=f"올바르지 않은 패키지입니다. 선택 가능: {list(CREDIT_PACKAGES.keys())}"
         )
     if body.pg_transaction_id:
-    existing = db.query(Subscription).filter(
-        Subscription.pg_transaction_id == body.pg_transaction_id
-    ).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="이미 처리된 결제입니다.")
+        existing = db.query(Subscription).filter(
+            Subscription.pg_transaction_id == body.pg_transaction_id
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="이미 처리된 결제입니다.")
 # TODO: 실제 운영 시 PG사 API 호출하여 결제 검증 필요
 
     # 크레딧 충전
