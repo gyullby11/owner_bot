@@ -12,7 +12,6 @@ from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user.models import User
 from modules.user.router import get_current_user
 from modules.user import service as user_service
-from modules.history.models import CreditTransaction
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
