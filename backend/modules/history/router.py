@@ -81,16 +81,17 @@ async def regenerate(
         output_payload=json.dumps(output, ensure_ascii=False),
         credits_used=1,
     )
-try:
-    db.add(new_history)
-    current_user.credits -= 1
-    db.add(CreditTransaction(
-        user_id=current_user.id,
-        amount=-1,
-        type=CreditTransactionType.use,
-        note="콘텐츠 재생성",
-    ))
-    db.commit()
+    
+    try:
+        db.add(new_history)
+        current_user.credits -= 1
+        db.add(CreditTransaction(
+            user_id=current_user.id,
+            amount=-1,
+            type=CreditTransactionType.use,
+            note="콘텐츠 재생성",
+        ))
+        db.commit()
     except Exception:
         db.rollback()
         raise HTTPException(status_code=500, detail="재생성 저장 중 오류가 발생했습니다.")
