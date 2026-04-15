@@ -62,19 +62,19 @@ def charge_credits(
 
     # 크레딧 충전
     try:
-    current_user.credits += pkg["credits"]
-    if pkg["plan"] == SubscriptionPlan.monthly:
-        current_user.plan = UserPlan.monthly
-    elif current_user.plan == UserPlan.free:
-        current_user.plan = UserPlan.per_use
+        current_user.credits += pkg["credits"]
+        if pkg["plan"] == SubscriptionPlan.monthly:
+            current_user.plan = UserPlan.monthly
+        elif current_user.plan == UserPlan.free:
+            current_user.plan = UserPlan.per_use
 
-    db.add(Subscription(...))
-    db.add(CreditTransaction(...))
-    db.commit()
-    db.refresh(current_user)
+        db.add(Subscription(...))
+        db.add(CreditTransaction(...))
+        db.commit()
+        db.refresh(current_user)
     except Exception:
-    db.rollback()
-    raise HTTPException(status_code=500, detail="충전 처리 중 오류가 발생했습니다.")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="충전 처리 중 오류가 발생했습니다.")
 
     return {
         "message": f"{pkg['credits']}크레딧이 충전되었습니다.",
