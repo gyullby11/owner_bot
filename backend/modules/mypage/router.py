@@ -12,9 +12,9 @@ router = APIRouter()
 
 # ── 충전 패키지 정의 ─────────────────────────────────────────
 CREDIT_PACKAGES = {
-    "basic":    {"credits": 5,  "price": 5000,  "plan": SubscriptionPlan.per_use},
-    "standard": {"credits": 10, "price": 9000,  "plan": SubscriptionPlan.per_use},
-    "pro":      {"credits": 30, "price": 15000, "plan": SubscriptionPlan.monthly},
+    "light": {"credits": 3,  "price": 3900,  "plan": SubscriptionPlan.per_use},
+    "basic": {"credits": 10, "price": 9900,  "plan": SubscriptionPlan.per_use},
+    "pro":   {"credits": 25, "price": 19900, "plan": SubscriptionPlan.per_use},
 }
 
 
@@ -56,10 +56,8 @@ def charge_credits(
     # 크레딧 충전
     current_user.credits += pkg["credits"]
 
-    # 플랜 업데이트 (monthly 패키지 구매 시)
-    if pkg["plan"] == SubscriptionPlan.monthly:
-        current_user.plan = UserPlan.monthly
-    elif current_user.plan == UserPlan.free:
+    # 플랜 업데이트 (무료 → per_use)
+    if current_user.plan == UserPlan.free:
         current_user.plan = UserPlan.per_use
 
     # 구독/결제 기록
