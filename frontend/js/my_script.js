@@ -1,8 +1,6 @@
 /* ==========================================================================
    공통 설정
    ========================================================================== */
-
-const API_BASE = "/api";
 let currentOutput = null;
 let currentTab = "blog";
 
@@ -102,6 +100,17 @@ async function generateContent() {
         }
         document.getElementById("empty-state").classList.add("hidden");
         document.getElementById("loading-state").classList.add("hidden");
+        // SEO 뱃지 업데이트
+        const seoBar = document.getElementById("seo-badge-bar");
+        const badgeKeyword = document.getElementById("badge-keyword");
+        const badgeRegion = document.getElementById("badge-region");
+        if (seoBar && body.keyword) {
+            badgeKeyword.textContent = `✓ 키워드 "${body.keyword}" 배치`;
+            badgeRegion.textContent = `✓ 지역명 "${body.region}" 앞배치`;
+            seoBar.classList.remove("hidden");
+            seoBar.classList.add("flex");
+        }
+
         showTab("blog");
 
     } catch (err) {
