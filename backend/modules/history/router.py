@@ -1,4 +1,6 @@
 import json
+
+from django import db
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
@@ -89,12 +91,12 @@ try:
         note="콘텐츠 재생성",
     ))
     db.commit()
-except Exception:
-    db.rollback()
-    raise HTTPException(status_code=500, detail="재생성 저장 중 오류가 발생했습니다.")
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="재생성 저장 중 오류가 발생했습니다.")
 
-return RegenerateOut(
-    message="재생성 성공",
-    output=output,
-    credits_remaining=current_user.credits,
-)
+    return RegenerateOut(
+        message="재생성 성공",
+        output=output,
+        credits_remaining=current_user.credits,
+    )
