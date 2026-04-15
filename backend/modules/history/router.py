@@ -1,6 +1,4 @@
 import json
-
-from django import db
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
@@ -81,7 +79,7 @@ async def regenerate(
         output_payload=json.dumps(output, ensure_ascii=False),
         credits_used=1,
     )
-    
+
     try:
         db.add(new_history)
         current_user.credits -= 1
