@@ -27,3 +27,14 @@ def decode_token(token: str) -> Optional[dict]:
         return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
     except JWTError:
         return None
+
+from modules.history.models import CreditTransaction, CreditTransactionType
+
+def create_user_with_bonus(db, user):
+    """가입 보너스 크레딧 지급"""
+    db.add(CreditTransaction(
+        user_id=user.id,
+        amount=3,
+        type=CreditTransactionType.earn,
+        note="가입 보너스",
+    ))    

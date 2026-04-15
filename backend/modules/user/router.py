@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import ExpiredSignatureError, JWTError
+from jose import jwt as jose_jwt
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -19,7 +20,7 @@ def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> User:
-    from jose import jwt as jose_jwt
+    
     try:
         payload = jose_jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
     except ExpiredSignatureError:
@@ -35,27 +36,21 @@ def get_current_user(
 
 # 회원가입
 @router.post("/signup", response_model=UserOut, status_code=201)
-def signup(
-    body: UserRegister,
-    db: Session = Depends(get_db)
-):
+def signup(body: UserRegister, db: Session = Depends(get_db)):
     if crud.get_user_by_email(db, body.email):
         raise HTTPException(status_code=400, detail="이미 사용 중인 이메일입니다.")
     if body.nickname and crud.get_user_by_nickname(db, body.nickname):
         raise HTTPException(status_code=409, detail="이미 사용 중인 닉네임입니다.")
 
     hashed = service.hash_password(body.password)
-    user = crud.create_user(db, body.email, hashed, body.nickname)
-
-    # 가입 보너스 크레딧 거래 기록
-    db.add(CreditTransaction(
-        user_id=user.id,
-        amount=3,
-        type=CreditTransactionType.earn,
-        note="가입 보너스",
-    ))
-    db.commit()
-    db.refresh(user)
+    try:
+        user = crud.create_user(db, body.email, hashed, body.nickname)
+        service.create_user_with_bonus(db, user)
+        db.commit()
+        db.refresh(user)
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="회원가입 처리 중 오류가 발생했습니다.")
     return user
 
 # 로그인
