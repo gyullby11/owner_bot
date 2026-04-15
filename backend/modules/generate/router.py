@@ -58,18 +58,20 @@ async def generate(
         output_payload=json.dumps(output, ensure_ascii=False),
         credits_used=1,
     )
-    db.add(history)
-
-    if current_user:
-        current_user.credits -= 1
-        db.add(CreditTransaction(
-            user_id=current_user.id,
-            amount=-1,
-            type=CreditTransactionType.use,
-            note="콘텐츠 생성",
-        ))
-
-    db.commit()
+    try:
+        db.add(history)
+        if current_user:
+            current_user.credits -= 1
+            db.add(CreditTransaction(
+                user_id=current_user.id,
+                amount=-1,
+                type=CreditTransactionType.use,
+                note="콘텐츠 생성",
+            ))
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="저장 중 오류가 발생했습니다.")
 
     return {
         "message": "콘텐츠 생성 성공",

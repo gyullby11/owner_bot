@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from modules.history import crud, service
-from modules.history.schemas import HistoryOut
+from modules.history.schemas import HistoryOut, RegenerateOut
 from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user.models import User
 from modules.user.router import get_current_user
@@ -47,7 +47,7 @@ def delete_history(
     crud.delete_history(db, history_id)
 
 
-@router.post("/{history_id}/regenerate", response_model=None)
+@router.post("/{history_id}/regenerate", response_model=RegenerateOut)
 async def regenerate(
     history_id: int,
     db: Session = Depends(get_db),
@@ -79,21 +79,23 @@ async def regenerate(
         output_payload=json.dumps(output, ensure_ascii=False),
         credits_used=1,
     )
-    db.add(new_history)
 
-    # 크레딧 차감
-    current_user.credits -= 1
-    db.add(CreditTransaction(
-        user_id=current_user.id,
-        amount=-1,
-        type=CreditTransactionType.use,
-        note="콘텐츠 재생성",
-    ))
+    try:
+        db.add(new_history)
+        current_user.credits -= 1
+        db.add(CreditTransaction(
+            user_id=current_user.id,
+            amount=-1,
+            type=CreditTransactionType.use,
+            note="콘텐츠 재생성",
+        ))
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="재생성 저장 중 오류가 발생했습니다.")
 
-    db.commit()
-
-    return {
-        "message": "재생성 성공",
-        "output": output,
-        "credits_remaining": current_user.credits,
-    }
+    return RegenerateOut(
+        message="재생성 성공",
+        output=output,
+        credits_remaining=current_user.credits,
+    )

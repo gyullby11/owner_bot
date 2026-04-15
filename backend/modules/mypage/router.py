@@ -45,43 +45,36 @@ def charge_credits(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """크레딧 패키지 충전 (basic: 5회/5000원 | standard: 10회/9000원 | pro: 30회/15000원)"""
+    
     pkg = CREDIT_PACKAGES.get(body.package)
     if not pkg:
         raise HTTPException(
             status_code=400,
             detail=f"올바르지 않은 패키지입니다. 선택 가능: {list(CREDIT_PACKAGES.keys())}"
         )
+    if body.pg_transaction_id:
+        existing = db.query(Subscription).filter(
+            Subscription.pg_transaction_id == body.pg_transaction_id
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="이미 처리된 결제입니다.")
+# TODO: 실제 운영 시 PG사 API 호출하여 결제 검증 필요
 
     # 크레딧 충전
-    current_user.credits += pkg["credits"]
+    try:
+        current_user.credits += pkg["credits"]
+        if pkg["plan"] == SubscriptionPlan.monthly:
+            current_user.plan = UserPlan.monthly
+        elif current_user.plan == UserPlan.free:
+            current_user.plan = UserPlan.per_use
 
-    # 플랜 업데이트 (무료 → per_use)
-    if current_user.plan == UserPlan.free:
-        current_user.plan = UserPlan.per_use
-
-    # 구독/결제 기록
-    today = date.today()
-    db.add(Subscription(
-        user_id=current_user.id,
-        plan=pkg["plan"],
-        amount=pkg["price"],
-        status=SubscriptionStatus.paid,
-        period_start=today,
-        period_end=today + timedelta(days=30) if pkg["plan"] == SubscriptionPlan.monthly else None,
-        pg_transaction_id=body.pg_transaction_id,
-    ))
-
-    # 크레딧 거래 기록
-    db.add(CreditTransaction(
-        user_id=current_user.id,
-        amount=pkg["credits"],
-        type=CreditTransactionType.earn,
-        note=f"{body.package} 패키지 충전 ({pkg['credits']}회)",
-    ))
-
-    db.commit()
-    db.refresh(current_user)
+        db.add(Subscription(...))
+        db.add(CreditTransaction(...))
+        db.commit()
+        db.refresh(current_user)
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="충전 처리 중 오류가 발생했습니다.")
 
     return {
         "message": f"{pkg['credits']}크레딧이 충전되었습니다.",
