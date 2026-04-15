@@ -38,10 +38,17 @@ async function login() {
     }
 
     try {
-        const data = await apiRequest("/auth/login", {
+        const formData = new URLSearchParams();
+        formData.append("username", email);
+        formData.append("password", password);
+
+        const res = await fetch(`${API_BASE}/auth/login`, {
             method: "POST",
-            body: JSON.stringify({ email, password }),
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: formData,
         });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "로그인에 실패했습니다.");
         saveAuth(data.access_token);
         window.location.href = "generate.html";
     } catch (error) {
@@ -65,11 +72,18 @@ async function register() {
             method: "POST",
             body: JSON.stringify({ email, nickname, password }),
         });
-        const data = await apiRequest("/auth/login", {
+        const formData = new URLSearchParams();
+        formData.append("username", email);
+        formData.append("password", password);
+
+        const res = await fetch(`${API_BASE}/auth/login`, {
             method: "POST",
-            body: JSON.stringify({ email, password }),
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: formData,
         });
-        saveAuth(data.access_token);
+        const loginData = await res.json();
+        if (!res.ok) throw new Error(loginData.detail || "로그인에 실패했습니다.");
+        saveAuth(loginData.access_token);
         window.location.href = "generate.html";
     } catch (error) {
         setMessage("message", error.message || "회원가입에 실패했습니다.", true);
