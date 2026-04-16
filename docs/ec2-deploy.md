@@ -80,3 +80,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 - certbot으로 HTTPS 적용
 - 운영용 DB 분리
 - 시크릿 관리 방식 정리
+
+HTTPS 설정 문서:
+
+- [docs/https-deploy.md](/c:/Users/USER/OneDrive/Desktop/ownerbot/owner_bot/docs/https-deploy.md)

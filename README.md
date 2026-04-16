@@ -41,6 +41,7 @@ docker compose up
 - 운영용 실행 파일: `docker-compose.prod.yml`
 - 운영용 환경변수 템플릿: `backend/.env.prod.example`
 - 배포 순서 문서: [docs/ec2-deploy.md](/c:/Users/USER/OneDrive/Desktop/ownerbot/owner_bot/docs/ec2-deploy.md)
+- HTTPS 설정 문서: [docs/https-deploy.md](/c:/Users/USER/OneDrive/Desktop/ownerbot/owner_bot/docs/https-deploy.md)
 
 ---
 

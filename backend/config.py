@@ -16,6 +16,17 @@ class Settings(BaseSettings):
     # 환경
     ENV: str = "development"
 
+    def model_post_init(self, __context) -> None:
+        is_production = self.ENV.lower() == "production"
+        if not is_production:
+            return
+
+        if not self.OPENAI_API_KEY:
+            raise ValueError("OPENAI_API_KEY must be set in production.")
+
+        if self.SECRET_KEY == "your-secret-key-here":
+            raise ValueError("SECRET_KEY must be changed for production.")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
