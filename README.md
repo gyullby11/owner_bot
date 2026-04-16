@@ -37,6 +37,11 @@ docker compose up
 - 백엔드: http://localhost:8000
 - API 문서: http://localhost:8000/docs
 
+### 4. EC2 운영 배포
+- 운영용 실행 파일: `docker-compose.prod.yml`
+- 운영용 환경변수 템플릿: `backend/.env.prod.example`
+- 배포 순서 문서: [docs/ec2-deploy.md](/c:/Users/USER/OneDrive/Desktop/ownerbot/owner_bot/docs/ec2-deploy.md)
+
 ---
 
 ## 🌿 브랜치 규칙
