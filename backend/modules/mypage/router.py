@@ -63,13 +63,25 @@ def charge_credits(
     # 크레딧 충전
     try:
         current_user.credits += pkg["credits"]
-        if pkg["plan"] == SubscriptionPlan.monthly:
-            current_user.plan = UserPlan.monthly
-        elif current_user.plan == UserPlan.free:
+        if current_user.plan == UserPlan.free:
             current_user.plan = UserPlan.per_use
 
-        db.add(Subscription(...))
-        db.add(CreditTransaction(...))
+        today = date.today()
+        db.add(Subscription(
+            user_id=current_user.id,
+            plan=pkg["plan"],
+            amount=pkg["price"],
+            status=SubscriptionStatus.paid,
+            period_start=today,
+            period_end=None,
+            pg_transaction_id=body.pg_transaction_id,
+        ))
+        db.add(CreditTransaction(
+            user_id=current_user.id,
+            amount=pkg["credits"],
+            type=CreditTransactionType.earn,
+            note=f"{body.package} 패키지 충전 ({pkg['credits']}회)",
+        ))
         db.commit()
         db.refresh(current_user)
     except Exception:
