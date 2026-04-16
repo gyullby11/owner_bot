@@ -57,16 +57,23 @@ async def regenerate(
     if not h or h.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="이력을 찾을 수 없습니다.")
 
-    if current_user.credits <= 0:
+    # atomic update: credits > 0 인 경우에만 차감 (race condition 방지)
+    updated = db.query(User).filter(
+        User.id == current_user.id,
+        User.credits > 0
+    ).update({"credits": User.credits - 1})
+    db.flush()
+    if updated == 0:
         raise HTTPException(status_code=402, detail="크레딧이 부족합니다. 충전 후 이용해 주세요.")
+    db.refresh(current_user)
 
     input_data = json.loads(h.input_payload)
     output = await generate_service.stream_content(input_data)
 
     if "error" in output:
+        db.rollback()
         raise HTTPException(status_code=500, detail="콘텐츠 생성 중 오류가 발생했습니다. 다시 시도해 주세요.")
 
-    # 새 히스토리 저장
     new_history = GenerationHistory(
         user_id=current_user.id,
         shop_name=h.shop_name,
@@ -82,7 +89,6 @@ async def regenerate(
 
     try:
         db.add(new_history)
-        current_user.credits -= 1
         db.add(CreditTransaction(
             user_id=current_user.id,
             amount=-1,
