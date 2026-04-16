@@ -9,7 +9,7 @@ from database import Base, engine
 from api.router import api_router
 
 from modules.user.models import User
-from modules.generate.models import GenerationHistory
+from modules.generate.models import GenerationHistory, GuestUsage
 from modules.history.models import CreditTransaction, Subscription
 
 app = FastAPI(

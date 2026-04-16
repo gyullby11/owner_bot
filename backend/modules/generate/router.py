@@ -1,17 +1,19 @@
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from database import get_db
 from modules.generate.schemas import GenerateRequest
-from modules.generate.models import GenerationHistory
+from modules.generate.models import GenerationHistory, GuestUsage
 from modules.generate import service, crud
 from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user.models import User
 from modules.user.router import get_current_user
 from modules.user import service as user_service
+
+GUEST_FREE_LIMIT = 1  # 비로그인 무료 체험 횟수
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
@@ -32,13 +34,27 @@ def get_optional_user(
 
 @router.post("", response_model=None)
 async def generate(
+    request: Request,
     body: GenerateRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_optional_user),
 ):
     if current_user:
-        if current_user.credits <= 0:
+        # atomic update: credits > 0 인 경우에만 차감 (race condition 방지)
+        updated = db.query(User).filter(
+            User.id == current_user.id,
+            User.credits > 0
+        ).update({"credits": User.credits - 1})
+        db.flush()
+        if updated == 0:
             raise HTTPException(status_code=402, detail="크레딧이 부족합니다. 충전 후 이용해 주세요.")
+        db.refresh(current_user)
+    else:
+        # 비로그인 IP 제한
+        client_ip = request.client.host
+        guest_count = db.query(GuestUsage).filter(GuestUsage.ip_address == client_ip).count()
+        if guest_count >= GUEST_FREE_LIMIT:
+            raise HTTPException(status_code=403, detail="무료 체험은 1회만 가능합니다. 회원가입 후 이용해 주세요.")
 
     input_data = body.model_dump()
     output = await service.stream_content(input_data)
@@ -61,13 +77,14 @@ async def generate(
     try:
         db.add(history)
         if current_user:
-            current_user.credits -= 1
             db.add(CreditTransaction(
                 user_id=current_user.id,
                 amount=-1,
                 type=CreditTransactionType.use,
                 note="콘텐츠 생성",
             ))
+        else:
+            db.add(GuestUsage(ip_address=request.client.host))
         db.commit()
     except Exception:
         db.rollback()
