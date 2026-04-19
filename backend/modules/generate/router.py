@@ -86,6 +86,7 @@ async def generate(
         else:
             db.add(GuestUsage(ip_address=request.client.host))
         db.commit()
+        db.refresh(history)
     except Exception:
         db.rollback()
         raise HTTPException(status_code=500, detail="저장 중 오류가 발생했습니다.")
@@ -94,5 +95,6 @@ async def generate(
         "message": "콘텐츠 생성 성공",
         "input": input_data,
         "output": output,
+        "history_id": history.id,
         "credits_remaining": current_user.credits if current_user else None,
     }

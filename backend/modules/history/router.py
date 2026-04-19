@@ -96,6 +96,7 @@ async def regenerate(
             note="콘텐츠 재생성",
         ))
         db.commit()
+        db.refresh(new_history)
     except Exception:
         db.rollback()
         raise HTTPException(status_code=500, detail="재생성 저장 중 오류가 발생했습니다.")
@@ -103,5 +104,6 @@ async def regenerate(
     return RegenerateOut(
         message="재생성 성공",
         output=output,
+        history_id=new_history.id,
         credits_remaining=current_user.credits,
     )

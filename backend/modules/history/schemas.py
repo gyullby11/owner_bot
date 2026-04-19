@@ -32,6 +32,7 @@ class CreditTransactionOut(BaseModel):
 class RegenerateOut(BaseModel):
     message: str
     output: dict
+    history_id: int
     credits_remaining: int
 
     class Config:

@@ -3,54 +3,7 @@
    ========================================================================== */
 let currentOutput = null;
 let currentTab = "blog";
-
-/* ==========================================================================
-   인증 - 회원가입 / 로그인
-   ========================================================================== */
-
-async function register() {
-    const email = document.getElementById("email").value;
-    const nickname = document.getElementById("nickname").value;
-    const password = document.getElementById("password").value;
-
-    const res = await fetch(`${API_BASE}/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, nickname, password })
-    });
-    const data = await res.json();
-    if (res.ok) {
-        window.location.href = "login.html";
-    } else {
-        document.getElementById("message").innerText = data.detail || "회원가입에 실패했습니다.";
-    }
-}
-
-async function login() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    // form-data 방식으로 변경
-    const formData = new URLSearchParams();
-    formData.append("username", email);  // OAuth2는 username 키 사용
-    formData.append("password", password);
-
-    const res = await fetch(`${API_BASE}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData
-    });
-    const data = await res.json();
-    if (res.ok && data.access_token) {
-        localStorage.setItem("access_token", data.access_token);
-        window.location.href = "generate.html";
-    } else {
-       const detail = Array.isArray(data.detail)
-          ? data.detail.map(e => e.msg).join(", ")
-          : data.detail || "로그인에 실패했습니다.";
-       document.getElementById("message").innerText = detail;
-   }
-}
+let currentHistoryId = null;
 
 /* ==========================================================================
    콘텐츠 생성
@@ -93,14 +46,16 @@ async function generateContent() {
         }
 
         currentOutput = data.output;
-        
+        currentHistoryId = data.history_id || null;
+
         if (data.credits_remaining !== null && data.credits_remaining !== undefined) {
-            const headerCreditsEl = document.getElementById("header-credits");
-            if (headerCreditsEl) headerCreditsEl.innerText = `${data.credits_remaining}회`;
+            const creditsEl = document.querySelector(".credits-display");
+            if (creditsEl) creditsEl.textContent = `${data.credits_remaining}회`;
         }
+
         document.getElementById("empty-state").classList.add("hidden");
         document.getElementById("loading-state").classList.add("hidden");
-        // SEO 뱃지 업데이트
+
         const seoBar = document.getElementById("seo-badge-bar");
         const badgeKeyword = document.getElementById("badge-keyword");
         const badgeRegion = document.getElementById("badge-region");
@@ -263,6 +218,7 @@ async function regenerateHistory(id) {
         alert("재생성이 완료되었습니다.");
         loadHistory();
         loadMyPage();
+        loadCreditHistory();
     } catch (e) {
         alert(e.message || "재생성에 실패했습니다.");
     }
@@ -299,6 +255,41 @@ async function loadCreditHistory() {
             }).join("");
     } catch (e) {
         console.error("크레딧 내역 로드 실패", e);
+    }
+}
+
+async function regenerateCurrent() {
+    if (!currentHistoryId) {
+        startGeneration();
+        return;
+    }
+    if (!confirm("같은 정보로 재생성하시겠습니까? 크레딧 1회가 차감됩니다.")) return;
+
+    const generateBtn = document.getElementById('generate-btn');
+    const regenBtn = document.getElementById('regen-btn');
+    generateBtn.disabled = true;
+    regenBtn.disabled = true;
+    document.getElementById('loading-state').classList.remove('hidden');
+    document.getElementById('tab-content').innerText = '';
+
+    try {
+        const data = await apiRequest(`/history/${currentHistoryId}/regenerate`, { method: "POST" });
+        currentOutput = data.output;
+        currentHistoryId = data.history_id || currentHistoryId;
+
+        if (data.credits_remaining !== null && data.credits_remaining !== undefined) {
+            const creditsEl = document.querySelector(".credits-display");
+            if (creditsEl) creditsEl.textContent = `${data.credits_remaining}회`;
+        }
+
+        document.getElementById('empty-state').classList.add('hidden');
+        showTab("blog");
+    } catch (e) {
+        alert(e.message || "재생성에 실패했습니다.");
+    } finally {
+        document.getElementById('loading-state').classList.add('hidden');
+        generateBtn.disabled = false;
+        regenBtn.disabled = false;
     }
 }
 
@@ -434,32 +425,8 @@ async function loadMyPage() {
 }
 
 /* ==========================================================================
-   mypage.html - 로그아웃 / 히스토리 상세
-   mypage.html - 내 정보 로드 / 로그아웃
+   mypage.html - 로그아웃
    ========================================================================== */
-
-async function loadMyInfo() {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    try {
-        const res = await fetch(`${API_BASE}/mypage/me`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-
-        const nicknameEl = document.getElementById("user-nickname");
-        const creditsEl  = document.getElementById("user-credits");
-        const planEl     = document.getElementById("user-plan");
-        const headerCreditsEl = document.getElementById("header-credits");
-
-        if (nicknameEl) nicknameEl.innerText = data.nickname || data.email;
-        if (creditsEl)  creditsEl.innerText  = `${data.credits}회`;
-        if (planEl)     planEl.innerText      = data.plan === "free" ? "무료 플랜" : "구독 플랜";
-        if (headerCreditsEl) headerCreditsEl.innerText = `${data.credits}회`;
-    } catch (e) {}
-}
 
 function logout() {
     if (confirm("로그아웃 하시겠습니까?")) {
@@ -484,6 +451,14 @@ async function loadCreditsDisplay() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+    // generate.html 진입 시 로그인 필수 체크
+    if (document.getElementById("generate-btn")) {
+        if (!localStorage.getItem("access_token")) {
+            window.location.href = "login.html";
+            return;
+        }
+    }
+
     initSlider();
     if (document.getElementById("history-list")) loadHistory();
     if (document.getElementById("user-info")) {
@@ -491,6 +466,4 @@ window.addEventListener("DOMContentLoaded", () => {
         loadCreditHistory();
     }
     loadCreditsDisplay();
-    loadMyInfo();
-
 });
