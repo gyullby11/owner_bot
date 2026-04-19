@@ -28,7 +28,10 @@ def get_current_user(
     except JWTError:
         raise HTTPException(status_code=401, detail="토큰이 유효하지 않습니다.")
 
-    user = db.query(User).filter(User.id == int(payload.get("sub"))).first()
+    sub = payload.get("sub")
+    if not sub:
+        raise HTTPException(status_code=401, detail="토큰이 유효하지 않습니다.")
+    user = db.query(User).filter(User.id == int(sub)).first()
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="사용자를 찾을 수 없습니다.")
     return user
@@ -91,6 +94,10 @@ def change_password(
     if body.current_password == body.new_password:
         raise HTTPException(status_code=400, detail="새 비밀번호가 현재 비밀번호와 동일합니다.")
 
-    current_user.hashed_password = service.hash_password(body.new_password)
-    db.commit()
+    try:
+        current_user.hashed_password = service.hash_password(body.new_password)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="비밀번호 변경 중 오류가 발생했습니다.")
     return {"message": "비밀번호가 변경되었습니다."}

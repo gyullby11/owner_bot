@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from modules.generate.schemas import GenerateRequest
 from modules.generate.models import GenerationHistory, GuestUsage
-from modules.generate import service, crud
+from modules.generate import service
 from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user.models import User
 from modules.user.router import get_current_user
@@ -60,6 +60,7 @@ async def generate(
     output = await service.stream_content(input_data)
 
     if "error" in output or "blog" not in output:
+        db.rollback()  # 차감된 크레딧 복구
         raise HTTPException(status_code=500, detail="콘텐츠 생성 중 오류가 발생했습니다. 다시 시도해 주세요.")
 
     history = GenerationHistory(
