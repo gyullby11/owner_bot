@@ -2,12 +2,11 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from modules.history import crud, service
+from modules.history import crud
 from modules.history.schemas import HistoryOut, RegenerateOut
 from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user.models import User
 from modules.user.router import get_current_user
-from modules.generate.schemas import GenerateRequest
 from modules.generate.models import GenerationHistory
 from modules.generate import service as generate_service
 from typing import List

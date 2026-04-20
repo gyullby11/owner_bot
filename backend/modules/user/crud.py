@@ -19,6 +19,6 @@ def create_user(db: Session, email: str, hashed_password: str, nickname: str = N
         plan=UserPlan.free
     )
     db.add(user)
-    db.commit()
+    db.flush()   # ID 할당만, commit은 signup router에서 bonus와 함께 한 번에
     db.refresh(user)
     return user
