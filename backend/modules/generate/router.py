@@ -54,7 +54,7 @@ async def generate(
         db.refresh(current_user)
     else:
         # 비로그인 IP 제한
-        client_ip = request.client.host
+        client_ip = request.client.host if request.client else "unknown"
         guest_count = db.query(GuestUsage).filter(GuestUsage.ip_address == client_ip).count()
         if guest_count >= GUEST_FREE_LIMIT:
             raise HTTPException(status_code=403, detail="무료 체험은 1회만 가능합니다. 회원가입 후 이용해 주세요.")
