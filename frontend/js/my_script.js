@@ -138,7 +138,40 @@ function showTab(tab) {
         content.innerText = currentOutput.review || "";
     } else if (tab === "shorts") {
         const s = currentOutput.shorts;
-        if (typeof s === "object") {
+        if (typeof s === "object" && s.timeline) {
+            let text = "";
+            if (s.concept) text += `🎬 컨셉\n${s.concept}\n\n`;
+            if (s.timeline) {
+                text += `📋 타임라인\n`;
+                s.timeline.forEach(cut => {
+                    text += `\n[${cut.time}]\n`;
+                    text += `화면: ${cut.scene}\n`;
+                    text += `자막: ${cut.caption}\n`;
+                    if (cut.thumbnail_text) text += `썸네일: ${cut.thumbnail_text}\n`;
+                });
+            }
+            if (s.filming_tips) {
+                text += `\n\n📸 촬영 팁\n`;
+                text += `${s.filming_tips.overall}\n\n`;
+                if (s.filming_tips.must_shots) {
+                    text += `필수 장면\n`;
+                    s.filming_tips.must_shots.forEach((shot, i) => {
+                        text += `${i+1}. ${shot}\n`;
+                    });
+                }
+                text += `\n자막 스타일: ${s.filming_tips.caption_style || ""}\n`;
+                text += `BGM: ${s.filming_tips.bgm || ""}\n`;
+                text += `컷 전환: ${s.filming_tips.cut_transition || ""}\n`;
+            }
+            if (s.caption_list) {
+                text += `\n\n🏷️ 자막 목록\n`;
+                s.caption_list.forEach((c, i) => text += `${i+1}. ${c}\n`);
+            }
+            if (s.instagram_body) {
+                text += `\n\n📱 인스타그램 본문\n${s.instagram_body}`;
+            }
+            content.innerText = text;
+        } else if (typeof s === "object") {
             content.innerText = `${s.cut1 || ""}\n${s.cut2 || ""}\n${s.cut3 || ""}`;
         } else {
             content.innerText = s || "";
@@ -234,7 +267,14 @@ async function viewHistoryDetail(id) {
             if (output.review) text += `⭐ [리뷰]\n${output.review}\n\n`;
             if (output.shorts) {
                 const s = output.shorts;
-                text += `📱 [쇼츠]\n${s.cut1 || ""}\n${s.cut2 || ""}\n${s.cut3 || ""}\n\n`;
+                if (s.timeline) {
+                    text += `📱 [쇼츠]\n`;
+                    s.timeline.forEach(cut => { text += `[${cut.time}] ${cut.caption}\n`; });
+                    if (s.instagram_body) text += `\n본문: ${s.instagram_body}\n`;
+                    text += "\n";
+                } else {
+                    text += `📱 [쇼츠]\n${s.cut1 || ""}\n${s.cut2 || ""}\n${s.cut3 || ""}\n\n`;
+                }
             }
             if (output.thumbnail) {
                 const t = Array.isArray(output.thumbnail) ? output.thumbnail.join("\n") : output.thumbnail;
