@@ -25,12 +25,12 @@ def extract_json(raw: str) -> dict | None:
     return None
 
 
-async def stream_content(data: dict) -> dict:
+async def generate_content(data: dict) -> dict:
     prompt = build_prompt(
-        shop_name=data["shop_name"],
-        business_type=data["business_type"],
-        region=data["region"],
-        keyword=data["keyword"],
+        shop_name=data.get("shop_name", ""),
+        business_type=data.get("business_type", ""),
+        region=data.get("region", ""),
+        keyword=data.get("keyword", ""),
         feature=data.get("feature", ""),
         tone=data.get("tone", "friendly")
     )
