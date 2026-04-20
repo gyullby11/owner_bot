@@ -41,6 +41,7 @@ async def stream_content(data: dict) -> dict:
             messages=[{"role": "user", "content": prompt}],
             temperature=0.8,
             max_tokens=2000,
+            timeout=30,
         )
     except RateLimitError:
         return {"error": "OpenAI 크레딧 부족 또는 요청 한도 초과"}
@@ -67,6 +68,7 @@ async def stream_content(data: dict) -> dict:
             ],
             temperature=0.3,
             max_tokens=2000,
+            timeout=30,
         )
     except OpenAIError:
         return {"error": "JSON 파싱 실패"}
