@@ -67,7 +67,7 @@ async def regenerate(
     db.refresh(current_user)
 
     input_data = json.loads(h.input_payload)
-    output = await generate_service.stream_content(input_data)
+    output = await generate_service.generate_content(input_data)
 
     if "error" in output:
         db.rollback()

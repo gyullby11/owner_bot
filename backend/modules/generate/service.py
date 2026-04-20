@@ -25,12 +25,12 @@ def extract_json(raw: str) -> dict | None:
     return None
 
 
-async def stream_content(data: dict) -> dict:
+async def generate_content(data: dict) -> dict:
     prompt = build_prompt(
-        shop_name=data["shop_name"],
-        business_type=data["business_type"],
-        region=data["region"],
-        keyword=data["keyword"],
+        shop_name=data.get("shop_name", ""),
+        business_type=data.get("business_type", ""),
+        region=data.get("region", ""),
+        keyword=data.get("keyword", ""),
         feature=data.get("feature", ""),
         tone=data.get("tone", "friendly")
     )
@@ -41,6 +41,7 @@ async def stream_content(data: dict) -> dict:
             messages=[{"role": "user", "content": prompt}],
             temperature=0.8,
             max_tokens=2000,
+            timeout=30,
         )
     except RateLimitError:
         return {"error": "OpenAI 크레딧 부족 또는 요청 한도 초과"}
@@ -67,6 +68,7 @@ async def stream_content(data: dict) -> dict:
             ],
             temperature=0.3,
             max_tokens=2000,
+            timeout=30,
         )
     except OpenAIError:
         return {"error": "JSON 파싱 실패"}

@@ -60,7 +60,7 @@ async def generate(
             raise HTTPException(status_code=403, detail="무료 체험은 1회만 가능합니다. 회원가입 후 이용해 주세요.")
 
     input_data = body.model_dump()
-    output = await service.stream_content(input_data)
+    output = await service.generate_content(input_data)
 
     if "error" in output or "blog" not in output:
         db.rollback()  # 차감된 크레딧 복구
