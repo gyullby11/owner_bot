@@ -3,6 +3,7 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from config import settings
+from modules.history.models import CreditTransaction, CreditTransactionType
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -28,13 +29,12 @@ def decode_token(token: str) -> Optional[dict]:
     except JWTError:
         return None
 
-from modules.history.models import CreditTransaction, CreditTransactionType
 
-def create_user_with_bonus(db, user):
+def create_user_with_bonus(db, user) -> None:
     """가입 보너스 크레딧 지급"""
     db.add(CreditTransaction(
         user_id=user.id,
         amount=3,
         type=CreditTransactionType.earn,
         note="가입 보너스",
-    ))    
+    ))
