@@ -88,7 +88,7 @@ async def generate(
                 note="콘텐츠 생성",
             ))
         else:
-            db.add(GuestUsage(ip_address=request.client.host))
+            db.add(GuestUsage(ip_address=client_ip))
         db.commit()
     except Exception:
         db.rollback()
