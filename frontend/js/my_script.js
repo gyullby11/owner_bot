@@ -135,7 +135,16 @@ function showTab(tab) {
             content.innerText = blog || "";
         }
     } else if (tab === "review") {
-        content.innerText = currentOutput.review || "";
+        const r = currentOutput.review;
+        if (typeof r === "object") {
+            let text = "";
+            if (r.customer_review) text += `📝 고객 리뷰 예시 (고객에게 보내줄 용도)\n${r.customer_review}\n\n`;
+            if (r.owner_reply_1) text += `💬 사장님 답글 예시 1 (감사형)\n${r.owner_reply_1}\n\n`;
+            if (r.owner_reply_2) text += `💬 사장님 답글 예시 2 (정보형)\n${r.owner_reply_2}`;
+            content.innerText = text;
+        } else {
+            content.innerText = r || "";
+        }
     } else if (tab === "shorts") {
         const s = currentOutput.shorts;
         if (typeof s === "object" && s.timeline) {
