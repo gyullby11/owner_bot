@@ -17,6 +17,10 @@ def get_history_by_id(db: Session, history_id: int):
 def delete_history(db: Session, history_id: int):
     history = get_history_by_id(db, history_id)
     if history:
-        db.delete(history)
-        db.commit()
+        try:
+            db.delete(history)
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
     return history

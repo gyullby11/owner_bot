@@ -23,7 +23,7 @@
             }
         }
     </script>
-    <link rel="stylesheet" href="/css/my_styles.css">
+    <link rel="stylesheet" href="css/my_styles.css">
 </head>
 <body class="text-navy antialiased min-h-screen flex flex-col relative overflow-x-hidden">
 
@@ -38,13 +38,15 @@
     <div class="fixed top-[20%] right-[-10%] w-[400px] h-[400px] bg-steel rounded-full mix-blend-multiply filter blur-[100px] opacity-20 -z-20"></div>
 
     <header class="w-full relative z-10 py-6 px-6 lg:px-12 flex justify-between items-center max-w-7xl mx-auto">
-        <a href="/index.html" class="flex items-center gap-2">
+        <a href="index.html" class="flex items-center gap-2">
             <div class="w-8 h-8 bg-navy rounded-lg flex items-center justify-center text-sand font-bold text-xl">S</div>
             <span class="text-2xl font-black tracking-tight text-navy">사장봇</span>
         </a>
         <div class="flex gap-4 items-center">
-            <a href="/html/login.html" class="text-steel font-bold hover:text-navy transition">로그인</a>
-            <a href="/html/register.html" class="px-5 py-2.5 rounded-full text-sm font-bold bg-navy text-white hover:bg-steel transition shadow-md">회원가입</a>
+            <a id="nav-login" href="login.html" class="text-steel font-bold hover:text-navy transition">로그인</a>
+            <a id="nav-register" href="register.html" class="px-5 py-2.5 rounded-full text-sm font-bold bg-navy text-white hover:bg-steel transition shadow-md">회원가입</a>
+            <a id="nav-mypage" href="generate.html" class="hidden text-steel font-bold hover:text-navy transition px-4 py-2">콘텐츠 생성</a>
+            <a id="nav-mypage2" href="mypage.html" class="hidden px-5 py-2.5 rounded-full text-sm font-bold bg-navy text-white hover:bg-steel transition shadow-md">마이페이지</a>
         </div>
     </header>
 
@@ -55,21 +57,52 @@
         </div>
 
         <h1 class="text-4xl md:text-5xl lg:text-6xl font-black leading-tight mb-6 text-navy">
-            가게 홍보글 작성,<br>
-            이제 <span class="text-camel relative">
-                사장봇
+            가게 홍보글,<br>
+            <span class="text-camel relative">
+                네이버에서 검색되는 글
                 <svg class="absolute w-full h-3 -bottom-1 left-0 text-sand opacity-60" viewBox="0 0 100 20" preserveAspectRatio="none">
                     <path d="M0,10 Q50,20 100,10" stroke="currentColor" stroke-width="8" fill="none"/>
                 </svg>
-            </span>에 맡기세요.
+            </span>로 만드세요.
         </h1>
 
-        <p class="text-lg md:text-xl text-steel mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
-            키워드 몇 개만 입력하면 네이버 블로그, 플레이스 리뷰, <br class="hidden md:block">
-            쇼츠 대본까지 1분 만에 자동으로 완성됩니다.
+        <p class="text-lg md:text-xl text-steel mb-6 max-w-2xl mx-auto font-medium leading-relaxed">
+            ChatGPT는 글을 써주지만, 사장봇은 네이버에서 검색되는 글을 써줍니다.<br class="hidden md:block">
+            키워드만 입력하면 블로그·리뷰·쇼츠 대본까지 1분 완성.
         </p>
 
-        <a href="/html/generate.html" class="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white transition-all duration-200 bg-navy font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 hover:bg-steel shadow-lg hover:shadow-xl hover:-translate-y-1 text-lg">
+        <!-- 비교 섹션 추가 -->
+        <div class="bg-white/80 border border-gray-200 rounded-2xl px-6 py-5 mb-10 max-w-xl mx-auto text-left shadow-sm">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">왜 ChatGPT 대신 사장봇인가요?</p>
+            <div class="space-y-2">
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold px-2 py-1 rounded-md bg-red-50 text-red-500">ChatGPT</span>
+                    <span class="text-sm text-steel">일반 글쓰기 — SEO 지식 직접 필요</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold px-2 py-1 rounded-md bg-green-50 text-green-700">사장봇</span>
+                    <span class="text-sm text-steel">C-Rank·D.I.A+ 로직 자동 적용</span>
+                </div>
+                <div class="flex items-center gap-3 pt-1 border-t border-gray-100">
+                    <span class="text-xs font-bold px-2 py-1 rounded-md bg-red-50 text-red-500">ChatGPT</span>
+                    <span class="text-sm text-steel">프롬프트 작성 능력 필요</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold px-2 py-1 rounded-md bg-green-50 text-green-700">사장봇</span>
+                    <span class="text-sm text-steel">가게명·업종·키워드만 입력, 누구나 가능</span>
+                </div>
+                <div class="flex items-center gap-3 pt-1 border-t border-gray-100">
+                    <span class="text-xs font-bold px-2 py-1 rounded-md bg-red-50 text-red-500">ChatGPT</span>
+                    <span class="text-sm text-steel">글 1개 생성</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold px-2 py-1 rounded-md bg-green-50 text-green-700">사장봇</span>
+                    <span class="text-sm text-steel">블로그+리뷰+쇼츠+썸네일 4종 동시 생성</span>
+                </div>
+            </div>
+        </div>
+
+        <a id="cta-guest" href="login.html" class="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white transition-all duration-200 bg-navy font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 hover:bg-steel shadow-lg hover:shadow-xl hover:-translate-y-1 text-lg">
             무료로 콘텐츠 3개 만들기
             <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
         </a>
@@ -110,6 +143,8 @@
         </div>
     </footer>
 
-    <script src="/js/my_script.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/my_script.js"></script>
 </body>
 </html>

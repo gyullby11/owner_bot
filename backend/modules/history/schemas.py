@@ -28,3 +28,11 @@ class CreditTransactionOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class RegenerateOut(BaseModel):
+    message: str
+    output: dict
+    credits_remaining: int
+
+    class Config:
+        from_attributes = True

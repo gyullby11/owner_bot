@@ -4,6 +4,15 @@ from sqlalchemy.sql import func
 from database import Base
 
 
+class GuestUsage(Base):
+    """비로그인 사용자 IP별 무료 체험 횟수 추적"""
+    __tablename__ = "guest_usage"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    ip_address = Column(String(45), nullable=False, index=True)  # IPv6 포함 최대 45자
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class GenerationHistory(Base):
     __tablename__ = "generation_history"
 

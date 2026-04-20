@@ -1,8 +1,6 @@
 /* ==========================================================================
    공통 설정
    ========================================================================== */
-
-const API_BASE = "http://localhost:8000/api";
 let currentOutput = null;
 let currentTab = "blog";
 
@@ -22,7 +20,7 @@ async function register() {
     });
     const data = await res.json();
     if (res.ok) {
-        window.location.href = "/html/login.html";
+        window.location.href = "login.html";
     } else {
         document.getElementById("message").innerText = data.detail || "회원가입에 실패했습니다.";
     }
@@ -32,18 +30,26 @@ async function login() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
+    // form-data 방식으로 변경
+    const formData = new URLSearchParams();
+    formData.append("username", email);  // OAuth2는 username 키 사용
+    formData.append("password", password);
+
     const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData
     });
     const data = await res.json();
     if (res.ok && data.access_token) {
-        localStorage.setItem("token", data.access_token);
-        window.location.href = "/html/generate.html";
+        localStorage.setItem("access_token", data.access_token);
+        window.location.href = "generate.html";
     } else {
-        document.getElementById("message").innerText = data.detail || "로그인에 실패했습니다.";
-    }
+       const detail = Array.isArray(data.detail)
+          ? data.detail.map(e => e.msg).join(", ")
+          : data.detail || "로그인에 실패했습니다.";
+       document.getElementById("message").innerText = detail;
+   }
 }
 
 /* ==========================================================================
@@ -51,45 +57,61 @@ async function login() {
    ========================================================================== */
 
 async function generateContent() {
-    console.log("1. 함수 시작");
+    const typeSelect = document.getElementById("business_type_select");
+    const typeInput = document.getElementById("business_type");
+    
+    // 업종 값 처리
+    if (typeSelect && typeSelect.value !== 'custom' && typeSelect.value !== '') {
+        typeInput.value = typeSelect.value;
+    }
+
     const body = {
         shop_name: document.getElementById("shop_name").value,
-        business_type: document.getElementById("business_type").value,
+        business_type: typeInput ? typeInput.value : "",
         region: document.getElementById("region").value,
         keyword: document.getElementById("keyword").value,
         feature: document.getElementById("feature").value,
         tone: document.getElementById("tone").value,
     };
 
-    console.log("2. 요청 데이터:", body);
+    const token = localStorage.getItem("access_token");
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
 
     try {
-        const btn = document.querySelector("button[type='button'][onclick='generateContent()']");
-        if (btn) btn.innerText = "생성 중...";
-
-        console.log("3. fetch 시작");
         const res = await fetch(`${API_BASE}/generate`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify(body)
         });
 
-        console.log("4. 응답 받음:", res.status);
         const data = await res.json();
-        console.log("5. 데이터:", data);
+
+        if (!res.ok) {
+            alert(data.detail || "콘텐츠 생성에 실패했습니다.");
+            return;
+        }
 
         currentOutput = data.output;
-        console.log("6. currentOutput:", currentOutput);
-
-        const resultDiv = document.getElementById("result-container");
-        console.log("7. resultDiv:", resultDiv);
-        // empty-state 숨기기
+        
+        if (data.credits_remaining !== null && data.credits_remaining !== undefined) {
+            const headerCreditsEl = document.getElementById("header-credits");
+            if (headerCreditsEl) headerCreditsEl.innerText = `${data.credits_remaining}회`;
+        }
         document.getElementById("empty-state").classList.add("hidden");
         document.getElementById("loading-state").classList.add("hidden");
-        console.log("8. showTab 호출");
+        // SEO 뱃지 업데이트
+        const seoBar = document.getElementById("seo-badge-bar");
+        const badgeKeyword = document.getElementById("badge-keyword");
+        const badgeRegion = document.getElementById("badge-region");
+        if (seoBar && body.keyword) {
+            badgeKeyword.textContent = `✓ 키워드 "${body.keyword}" 배치`;
+            badgeRegion.textContent = `✓ 지역명 "${body.region}" 앞배치`;
+            seoBar.classList.remove("hidden");
+            seoBar.classList.add("flex");
+        }
+
         showTab("blog");
-        if (btn) btn.innerText = "콘텐츠 생성하기";
-        console.log("9. 완료");
 
     } catch (err) {
         console.error("에러:", err);
@@ -113,17 +135,89 @@ function showTab(tab) {
             content.innerText = blog || "";
         }
     } else if (tab === "review") {
-        content.innerText = currentOutput.review || "";
+        const r = currentOutput.review;
+        if (typeof r === "object") {
+            let text = "";
+            if (r.customer_review) text += `📝 고객 리뷰 예시 (고객에게 보내줄 용도)\n${r.customer_review}\n\n`;
+            if (r.owner_reply_1) text += `💬 사장님 답글 예시 1 (감사형)\n${r.owner_reply_1}\n\n`;
+            if (r.owner_reply_2) text += `💬 사장님 답글 예시 2 (정보형)\n${r.owner_reply_2}`;
+            content.innerText = text;
+        } else {
+            content.innerText = r || "";
+        }
     } else if (tab === "shorts") {
         const s = currentOutput.shorts;
-        if (typeof s === "object") {
+        if (typeof s === "object" && s.timeline) {
+            let text = "";
+            if (s.concept) text += `🎬 컨셉\n${s.concept}\n\n`;
+            if (s.timeline) {
+                text += `📋 타임라인\n`;
+                s.timeline.forEach(cut => {
+                    text += `\n[${cut.time}]\n`;
+                    text += `화면: ${cut.scene}\n`;
+                    text += `자막: ${cut.caption}\n`;
+                    if (cut.thumbnail_text) text += `썸네일: ${cut.thumbnail_text}\n`;
+                });
+            }
+            if (s.filming_tips) {
+                text += `\n\n📸 촬영 팁\n`;
+                text += `${s.filming_tips.overall}\n\n`;
+                if (s.filming_tips.must_shots) {
+                    text += `필수 장면\n`;
+                    s.filming_tips.must_shots.forEach((shot, i) => {
+                        text += `${i+1}. ${shot}\n`;
+                    });
+                }
+                text += `\n자막 스타일: ${s.filming_tips.caption_style || ""}\n`;
+                text += `BGM: ${s.filming_tips.bgm || ""}\n`;
+                text += `컷 전환: ${s.filming_tips.cut_transition || ""}\n`;
+            }
+            if (s.caption_list) {
+                text += `\n\n🏷️ 자막 목록\n`;
+                s.caption_list.forEach((c, i) => text += `${i+1}. ${c}\n`);
+            }
+            if (s.instagram_body) {
+                text += `\n\n📱 인스타그램 본문\n${s.instagram_body}`;
+            }
+            content.innerText = text;
+        } else if (typeof s === "object") {
             content.innerText = `${s.cut1 || ""}\n${s.cut2 || ""}\n${s.cut3 || ""}`;
         } else {
             content.innerText = s || "";
         }
     } else if (tab === "thumbnail") {
         const thumb = currentOutput.thumbnail;
-        content.innerText = Array.isArray(thumb) ? thumb.join("\n") : (thumb || "");
+        if (typeof thumb === "object" && thumb.copies) {
+            let text = "";
+            if (thumb.copies) {
+                text += `✏️ 썸네일 문구\n`;
+                text += `숫자형: ${thumb.copies.number_type || ""}\n`;
+                text += `질문형: ${thumb.copies.question_type || ""}\n`;
+                text += `감성형: ${thumb.copies.emotion_type || ""}\n\n`;
+            }
+            if (thumb.main_image_guide) {
+                text += `📸 메인 썸네일 화면 가이드\n`;
+                text += `베스트 장면: ${thumb.main_image_guide.best_shot || ""}\n`;
+                if (thumb.main_image_guide.alternatives) {
+                    text += `대안 장면:\n`;
+                    thumb.main_image_guide.alternatives.forEach((a, i) => text += `${i+1}. ${a}\n`);
+                }
+                text += `피해야 할 장면: ${thumb.main_image_guide.avoid || ""}\n\n`;
+            }
+            if (thumb.design_guide) {
+                text += `🎨 디자인 가이드\n`;
+                text += `배경: ${thumb.design_guide.background || ""}\n`;
+                text += `폰트: ${thumb.design_guide.font_style || ""}\n`;
+                text += `포인트 색상: ${thumb.design_guide.point_color || ""}\n\n`;
+            }
+            if (thumb.cta) {
+                text += `📢 CTA 문구\n`;
+                thumb.cta.forEach((c, i) => text += `${i+1}. ${c}\n`);
+            }
+            content.innerText = text;
+        } else {
+            content.innerText = Array.isArray(thumb) ? thumb.join("\n") : (thumb || "");
+        }
     }
 
     switchUiTab(tab);
@@ -140,35 +234,151 @@ function copyContent() {
    ========================================================================== */
 
 async function loadHistory() {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-    const res = await fetch(`${API_BASE}/history`, {
-        headers: { "Authorization": `Bearer ${token}` }
-    });
-    const data = await res.json();
     const list = document.getElementById("history-list");
     if (!list) return;
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+        list.innerHTML = `<p class="text-gray-500">로그인 후 이용할 수 있습니다.</p>`;
+        return;
+    }
 
     try {
-        const res = await fetch(`${API_BASE}/history`);
-        if (!res.ok) return;
-        const data = await res.json();
-        list.innerHTML = data.map(h => `
-            <div style="padding:10px;border-bottom:1px solid #eee;">
-                <p>${h.shop_name} · ${h.keyword} · ${h.created_at}</p>
-                <button onclick="deleteHistory(${h.id})">삭제</button>
-            </div>
-        `).join("");
-    } catch (e) {}
+        const data = await apiRequest("/history");
+        const countEl = document.getElementById("history-count");
+        if (countEl) countEl.textContent = `총 ${data.length}건`;
+
+        list.innerHTML = data.length === 0
+            ? `<p class="text-gray-500">생성 이력이 없습니다.</p>`
+            : data.map(h => {
+                const date = new Date(h.created_at).toLocaleString('ko-KR');
+                return `
+                <div class="p-4 rounded-xl border border-gray-200 hover:border-navy transition bg-white/50">
+                    <div class="flex justify-between items-start gap-4">
+                        <div class="flex-grow">
+                            <p class="font-bold text-navy">${h.shop_name} <span class="text-xs text-gray-400 font-medium">· ${h.business_type}</span></p>
+                            <p class="text-sm text-gray-500 mt-1">🔑 ${h.keyword} · 📍 ${h.region}</p>
+                            <p class="text-xs text-gray-400 mt-1">${date} · ${h.credits_used}크레딧 사용</p>
+                        </div>
+                        <div class="flex gap-2 flex-shrink-0">
+                            <button onclick="viewHistoryDetail(${h.id})" class="px-3 py-1.5 text-xs font-bold bg-navy text-white rounded-lg hover:bg-steel transition">상세</button>
+                            <button onclick="regenerateHistory(${h.id})" class="px-3 py-1.5 text-xs font-bold bg-sand text-navy rounded-lg hover:bg-camel hover:text-white transition">재생성</button>
+                            <button onclick="deleteHistory(${h.id})" class="px-3 py-1.5 text-xs font-bold bg-gray-100 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-500 transition">삭제</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            }).join("");
+    } catch (e) {
+        console.error("히스토리 로드 실패", e);
+    }
 }
 
 async function deleteHistory(id) {
-    const token = localStorage.getItem("token");
-    await fetch(`${API_BASE}/history/${id}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
-    });
-    loadHistory();
+    if (!confirm("이 기록을 삭제하시겠습니까?")) return;
+    try {
+        await apiRequest(`/history/${id}`, { method: "DELETE" });
+        loadHistory();
+    } catch (e) {
+        alert(e.message || "삭제에 실패했습니다.");
+    }
+}
+
+async function viewHistoryDetail(id) {
+    try {
+        const h = await apiRequest(`/history/${id}`);
+        const modal = document.getElementById("history-modal");
+        const title = document.getElementById("modal-title");
+        const body = document.getElementById("modal-body");
+        title.textContent = `${h.shop_name} - ${h.keyword}`;
+
+        let output;
+        try { output = JSON.parse(h.output_payload); } catch { output = null; }
+
+        let text = `[가게] ${h.shop_name} (${h.business_type})\n[지역] ${h.region}\n[키워드] ${h.keyword}\n`;
+        if (h.feature) text += `[특징] ${h.feature}\n`;
+        text += `[톤] ${h.tone}\n\n`;
+
+        if (output) {
+            if (output.blog) {
+                const b = output.blog;
+                text += `📝 [블로그]\n${b.title || ""}\n\n${b.body || ""}\n\n${b.hashtags || ""}\n\n`;
+            }
+            if (output.review) text += `⭐ [리뷰]\n${output.review}\n\n`;
+            if (output.shorts) {
+                const s = output.shorts;
+                if (s.timeline) {
+                    text += `📱 [쇼츠]\n`;
+                    s.timeline.forEach(cut => { text += `[${cut.time}] ${cut.caption}\n`; });
+                    if (s.instagram_body) text += `\n본문: ${s.instagram_body}\n`;
+                    text += "\n";
+                } else {
+                    text += `📱 [쇼츠]\n${s.cut1 || ""}\n${s.cut2 || ""}\n${s.cut3 || ""}\n\n`;
+                }
+            }
+            if (output.thumbnail) {
+                const t = Array.isArray(output.thumbnail) ? output.thumbnail.join("\n") : output.thumbnail;
+                text += `🎨 [썸네일]\n${t}\n`;
+            }
+        } else {
+            text += h.output_payload;
+        }
+
+        body.textContent = text;
+        modal.classList.remove("hidden");
+    } catch (e) {
+        alert(e.message || "상세 조회에 실패했습니다.");
+    }
+}
+
+function closeHistoryDetail() {
+    const modal = document.getElementById("history-modal");
+    if (modal) modal.classList.add("hidden");
+}
+
+async function regenerateHistory(id) {
+    if (!confirm("이 기록으로 재생성하시겠습니까? 크레딧 1회가 차감됩니다.")) return;
+    try {
+        await apiRequest(`/history/${id}/regenerate`, { method: "POST" });
+        alert("재생성이 완료되었습니다.");
+        loadHistory();
+        loadMyPage();
+    } catch (e) {
+        alert(e.message || "재생성에 실패했습니다.");
+    }
+}
+
+async function loadCreditHistory() {
+    const list = document.getElementById("credits-list");
+    if (!list) return;
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    try {
+        const data = await apiRequest("/mypage/credits");
+        const creditEl = document.getElementById("user-credits");
+        if (creditEl) creditEl.textContent = data.credits;
+
+        const tx = data.transactions || [];
+        list.innerHTML = tx.length === 0
+            ? `<p class="text-gray-500">사용 내역이 없습니다.</p>`
+            : tx.map(t => {
+                const date = new Date(t.created_at).toLocaleString('ko-KR');
+                const isPlus = t.amount > 0;
+                const color = isPlus ? "text-green-600" : "text-red-500";
+                const sign = isPlus ? "+" : "";
+                return `
+                <div class="flex justify-between items-center py-2 px-3 rounded-lg hover:bg-gray-50">
+                    <div>
+                        <span class="font-bold text-navy">${t.type}</span>
+                        ${t.note ? `<span class="text-gray-500 ml-2">${t.note}</span>` : ""}
+                        <p class="text-xs text-gray-400">${date}</p>
+                    </div>
+                    <span class="font-black ${color}">${sign}${t.amount}</span>
+                </div>`;
+            }).join("");
+    } catch (e) {
+        console.error("크레딧 내역 로드 실패", e);
+    }
 }
 
 /* ==========================================================================
@@ -204,9 +414,6 @@ function switchUiTab(tabName) {
     activeBtn.classList.remove('text-gray-500', 'hover:bg-gray-100', 'hover:text-navy');
     activeBtn.classList.add('bg-navy', 'text-white', 'active-tab');
 
-    if (typeof showTab === 'function') {
-        showTab(tabName);
-    }
 }
 
 /* ==========================================================================
@@ -241,7 +448,6 @@ async function startGeneration() {
         await generateContent();
     } catch (error) {
         console.error(error);
-        alert("콘텐츠 생성 중 오류가 발생했습니다.");
     } finally {
         document.getElementById('loading-state').classList.add('hidden');
         generateBtn.disabled = false;
@@ -275,25 +481,95 @@ function initSlider() {
 }
 
 /* ==========================================================================
-   mypage.html - 로그아웃 / 히스토리 상세
+   mypage.html - 유저 정보 / 크레딧 로드
    ========================================================================== */
 
-function logout() {
-    if (confirm("로그아웃 하시겠습니까?")) {
-        localStorage.removeItem("token");
-        window.location.href = "/index.html";
+async function loadMyPage() {
+    if (!document.getElementById("user-info")) return;
+
+    if (!localStorage.getItem("access_token")) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    try {
+        const user = await apiRequest("/auth/me");
+
+        const avatarEl = document.getElementById("user-avatar");
+        if (avatarEl) avatarEl.textContent = (user.nickname || user.email)[0];
+
+        const nameEl = document.getElementById("user-name");
+        if (nameEl) nameEl.textContent = `${user.nickname || "사용자"} 사장님`;
+
+        const emailEl = document.getElementById("user-email");
+        if (emailEl) emailEl.textContent = user.email;
+
+        const creditEl = document.getElementById("user-credits");
+        if (creditEl) creditEl.textContent = user.credits;
+
+    } catch (e) {
+        console.error("유저 정보 로드 실패", e);
     }
 }
 
-function viewHistoryDetail() {
-    alert("히스토리 상세 보기 기능입니다.");
+/* ==========================================================================
+   mypage.html - 로그아웃 / 히스토리 상세
+   mypage.html - 내 정보 로드 / 로그아웃
+   ========================================================================== */
+
+async function loadMyInfo() {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/mypage/me`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const nicknameEl = document.getElementById("user-nickname");
+        const creditsEl  = document.getElementById("user-credits");
+        const planEl     = document.getElementById("user-plan");
+        const headerCreditsEl = document.getElementById("header-credits");
+
+        if (nicknameEl) nicknameEl.innerText = data.nickname || data.email;
+        if (creditsEl)  creditsEl.innerText  = `${data.credits}회`;
+        if (planEl)     planEl.innerText      = data.plan === "free" ? "무료 플랜" : "구독 플랜";
+        if (headerCreditsEl) headerCreditsEl.innerText = `${data.credits}회`;
+    } catch (e) {}
+}
+
+function logout() {
+    if (confirm("로그아웃 하시겠습니까?")) {
+        localStorage.removeItem("access_token");
+        window.location.href = "index.html";
+    }
 }
 
 /* ==========================================================================
    페이지 로드
    ========================================================================== */
 
+async function loadCreditsDisplay() {
+    const el = document.querySelector(".credits-display");
+    if (!el) return;
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    try {
+        const user = await apiRequest("/auth/me");
+        el.textContent = `${user.credits}회`;
+    } catch (e) {}
+}
+
 window.addEventListener("DOMContentLoaded", () => {
     initSlider();
-    loadHistory();
+    if (document.getElementById("history-list")) loadHistory();
+    if (document.getElementById("user-info")) {
+        loadMyPage();
+        loadCreditHistory();
+    }
+    loadCreditsDisplay();
+    loadMyInfo();
+
 });
