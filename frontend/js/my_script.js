@@ -187,7 +187,37 @@ function showTab(tab) {
         }
     } else if (tab === "thumbnail") {
         const thumb = currentOutput.thumbnail;
-        content.innerText = Array.isArray(thumb) ? thumb.join("\n") : (thumb || "");
+        if (typeof thumb === "object" && thumb.copies) {
+            let text = "";
+            if (thumb.copies) {
+                text += `✏️ 썸네일 문구\n`;
+                text += `숫자형: ${thumb.copies.number_type || ""}\n`;
+                text += `질문형: ${thumb.copies.question_type || ""}\n`;
+                text += `감성형: ${thumb.copies.emotion_type || ""}\n\n`;
+            }
+            if (thumb.main_image_guide) {
+                text += `📸 메인 썸네일 화면 가이드\n`;
+                text += `베스트 장면: ${thumb.main_image_guide.best_shot || ""}\n`;
+                if (thumb.main_image_guide.alternatives) {
+                    text += `대안 장면:\n`;
+                    thumb.main_image_guide.alternatives.forEach((a, i) => text += `${i+1}. ${a}\n`);
+                }
+                text += `피해야 할 장면: ${thumb.main_image_guide.avoid || ""}\n\n`;
+            }
+            if (thumb.design_guide) {
+                text += `🎨 디자인 가이드\n`;
+                text += `배경: ${thumb.design_guide.background || ""}\n`;
+                text += `폰트: ${thumb.design_guide.font_style || ""}\n`;
+                text += `포인트 색상: ${thumb.design_guide.point_color || ""}\n\n`;
+            }
+            if (thumb.cta) {
+                text += `📢 CTA 문구\n`;
+                thumb.cta.forEach((c, i) => text += `${i+1}. ${c}\n`);
+            }
+            content.innerText = text;
+        } else {
+            content.innerText = Array.isArray(thumb) ? thumb.join("\n") : (thumb || "");
+        }
     }
 
     switchUiTab(tab);
