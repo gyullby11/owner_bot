@@ -69,7 +69,7 @@ async def regenerate(
     input_data = json.loads(h.input_payload)
     output = await generate_service.generate_content(input_data)
 
-    if "error" in output:
+    if "error" in output or "blog" not in output:
         db.rollback()
         raise HTTPException(status_code=500, detail="콘텐츠 생성 중 오류가 발생했습니다. 다시 시도해 주세요.")
 
