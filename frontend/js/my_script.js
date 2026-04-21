@@ -49,7 +49,7 @@ async function generateContent() {
         currentHistoryId = data.history_id || null;
 
         if (data.credits_remaining !== null && data.credits_remaining !== undefined) {
-            const creditsEl = document.querySelector(".credits-display");
+            const creditsEl = document.getElementById("header-credits");
             if (creditsEl) creditsEl.textContent = `${data.credits_remaining}회`;
         }
 
@@ -278,7 +278,7 @@ async function regenerateCurrent() {
         currentHistoryId = data.history_id || currentHistoryId;
 
         if (data.credits_remaining !== null && data.credits_remaining !== undefined) {
-            const creditsEl = document.querySelector(".credits-display");
+            const creditsEl = document.getElementById("header-credits");
             if (creditsEl) creditsEl.textContent = `${data.credits_remaining}회`;
         }
 
@@ -440,7 +440,7 @@ function logout() {
    ========================================================================== */
 
 async function loadCreditsDisplay() {
-    const el = document.querySelector(".credits-display");
+    const el = document.getElementById("header-credits");
     if (!el) return;
     const token = localStorage.getItem("access_token");
     if (!token) return;
