@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from modules.generate.schemas import GenerateRequest
 from modules.generate.models import GenerationHistory, GuestUsage
-from modules.generate import service, crud
+from modules.generate import service
 from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user.models import User
 from modules.user.router import get_current_user
@@ -29,7 +29,10 @@ def get_optional_user(
     payload = user_service.decode_token(token)
     if not payload:
         return None
-    return db.query(User).filter(User.id == int(payload.get("sub"))).first()
+    sub = payload.get("sub")
+    if not sub:
+        return None
+    return db.query(User).filter(User.id == int(sub)).first()
 
 
 @router.post("", response_model=None)
@@ -51,15 +54,16 @@ async def generate(
         db.refresh(current_user)
     else:
         # 비로그인 IP 제한
-        client_ip = request.client.host
+        client_ip = request.client.host if request.client else "unknown"
         guest_count = db.query(GuestUsage).filter(GuestUsage.ip_address == client_ip).count()
         if guest_count >= GUEST_FREE_LIMIT:
             raise HTTPException(status_code=403, detail="무료 체험은 1회만 가능합니다. 회원가입 후 이용해 주세요.")
 
     input_data = body.model_dump()
-    output = await service.stream_content(input_data)
+    output = await service.generate_content(input_data)
 
     if "error" in output or "blog" not in output:
+        db.rollback()  # 차감된 크레딧 복구
         raise HTTPException(status_code=500, detail="콘텐츠 생성 중 오류가 발생했습니다. 다시 시도해 주세요.")
 
     history = GenerationHistory(
@@ -84,7 +88,7 @@ async def generate(
                 note="콘텐츠 생성",
             ))
         else:
-            db.add(GuestUsage(ip_address=request.client.host))
+            db.add(GuestUsage(ip_address=client_ip))
         db.commit()
         db.refresh(history)
     except Exception:

@@ -90,17 +90,89 @@ function showTab(tab) {
             content.innerText = blog || "";
         }
     } else if (tab === "review") {
-        content.innerText = currentOutput.review || "";
+        const r = currentOutput.review;
+        if (typeof r === "object") {
+            let text = "";
+            if (r.customer_review) text += `📝 고객 리뷰 예시 (고객에게 보내줄 용도)\n${r.customer_review}\n\n`;
+            if (r.owner_reply_1) text += `💬 사장님 답글 예시 1 (감사형)\n${r.owner_reply_1}\n\n`;
+            if (r.owner_reply_2) text += `💬 사장님 답글 예시 2 (정보형)\n${r.owner_reply_2}`;
+            content.innerText = text;
+        } else {
+            content.innerText = r || "";
+        }
     } else if (tab === "shorts") {
         const s = currentOutput.shorts;
-        if (typeof s === "object") {
+        if (typeof s === "object" && s.timeline) {
+            let text = "";
+            if (s.concept) text += `🎬 컨셉\n${s.concept}\n\n`;
+            if (s.timeline) {
+                text += `📋 타임라인\n`;
+                s.timeline.forEach(cut => {
+                    text += `\n[${cut.time}]\n`;
+                    text += `화면: ${cut.scene}\n`;
+                    text += `자막: ${cut.caption}\n`;
+                    if (cut.thumbnail_text) text += `썸네일: ${cut.thumbnail_text}\n`;
+                });
+            }
+            if (s.filming_tips) {
+                text += `\n\n📸 촬영 팁\n`;
+                text += `${s.filming_tips.overall}\n\n`;
+                if (s.filming_tips.must_shots) {
+                    text += `필수 장면\n`;
+                    s.filming_tips.must_shots.forEach((shot, i) => {
+                        text += `${i+1}. ${shot}\n`;
+                    });
+                }
+                text += `\n자막 스타일: ${s.filming_tips.caption_style || ""}\n`;
+                text += `BGM: ${s.filming_tips.bgm || ""}\n`;
+                text += `컷 전환: ${s.filming_tips.cut_transition || ""}\n`;
+            }
+            if (s.caption_list) {
+                text += `\n\n🏷️ 자막 목록\n`;
+                s.caption_list.forEach((c, i) => text += `${i+1}. ${c}\n`);
+            }
+            if (s.instagram_body) {
+                text += `\n\n📱 인스타그램 본문\n${s.instagram_body}`;
+            }
+            content.innerText = text;
+        } else if (typeof s === "object") {
             content.innerText = `${s.cut1 || ""}\n${s.cut2 || ""}\n${s.cut3 || ""}`;
         } else {
             content.innerText = s || "";
         }
     } else if (tab === "thumbnail") {
         const thumb = currentOutput.thumbnail;
-        content.innerText = Array.isArray(thumb) ? thumb.join("\n") : (thumb || "");
+        if (typeof thumb === "object" && thumb.copies) {
+            let text = "";
+            if (thumb.copies) {
+                text += `✏️ 썸네일 문구\n`;
+                text += `숫자형: ${thumb.copies.number_type || ""}\n`;
+                text += `질문형: ${thumb.copies.question_type || ""}\n`;
+                text += `감성형: ${thumb.copies.emotion_type || ""}\n\n`;
+            }
+            if (thumb.main_image_guide) {
+                text += `📸 메인 썸네일 화면 가이드\n`;
+                text += `베스트 장면: ${thumb.main_image_guide.best_shot || ""}\n`;
+                if (thumb.main_image_guide.alternatives) {
+                    text += `대안 장면:\n`;
+                    thumb.main_image_guide.alternatives.forEach((a, i) => text += `${i+1}. ${a}\n`);
+                }
+                text += `피해야 할 장면: ${thumb.main_image_guide.avoid || ""}\n\n`;
+            }
+            if (thumb.design_guide) {
+                text += `🎨 디자인 가이드\n`;
+                text += `배경: ${thumb.design_guide.background || ""}\n`;
+                text += `폰트: ${thumb.design_guide.font_style || ""}\n`;
+                text += `포인트 색상: ${thumb.design_guide.point_color || ""}\n\n`;
+            }
+            if (thumb.cta) {
+                text += `📢 CTA 문구\n`;
+                thumb.cta.forEach((c, i) => text += `${i+1}. ${c}\n`);
+            }
+            content.innerText = text;
+        } else {
+            content.innerText = Array.isArray(thumb) ? thumb.join("\n") : (thumb || "");
+        }
     }
 
     switchUiTab(tab);
@@ -189,7 +261,14 @@ async function viewHistoryDetail(id) {
             if (output.review) text += `⭐ [리뷰]\n${output.review}\n\n`;
             if (output.shorts) {
                 const s = output.shorts;
-                text += `📱 [쇼츠]\n${s.cut1 || ""}\n${s.cut2 || ""}\n${s.cut3 || ""}\n\n`;
+                if (s.timeline) {
+                    text += `📱 [쇼츠]\n`;
+                    s.timeline.forEach(cut => { text += `[${cut.time}] ${cut.caption}\n`; });
+                    if (s.instagram_body) text += `\n본문: ${s.instagram_body}\n`;
+                    text += "\n";
+                } else {
+                    text += `📱 [쇼츠]\n${s.cut1 || ""}\n${s.cut2 || ""}\n${s.cut3 || ""}\n\n`;
+                }
             }
             if (output.thumbnail) {
                 const t = Array.isArray(output.thumbnail) ? output.thumbnail.join("\n") : output.thumbnail;

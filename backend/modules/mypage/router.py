@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -22,9 +22,6 @@ class ChargeRequest(BaseModel):
     package: str               # "basic" | "standard" | "pro"
     pg_transaction_id: Optional[str] = None   # PG사 거래 ID (프론트에서 전달)
 
-
-class SubscribeRequest(BaseModel):
-    pg_transaction_id: Optional[str] = None
 
 
 @router.get("/me")

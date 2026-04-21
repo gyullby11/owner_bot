@@ -2,12 +2,11 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from modules.history import crud, service
+from modules.history import crud
 from modules.history.schemas import HistoryOut, RegenerateOut
 from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user.models import User
 from modules.user.router import get_current_user
-from modules.generate.schemas import GenerateRequest
 from modules.generate.models import GenerationHistory
 from modules.generate import service as generate_service
 from typing import List
@@ -68,9 +67,9 @@ async def regenerate(
     db.refresh(current_user)
 
     input_data = json.loads(h.input_payload)
-    output = await generate_service.stream_content(input_data)
+    output = await generate_service.generate_content(input_data)
 
-    if "error" in output:
+    if "error" in output or "blog" not in output:
         db.rollback()
         raise HTTPException(status_code=500, detail="콘텐츠 생성 중 오류가 발생했습니다. 다시 시도해 주세요.")
 
