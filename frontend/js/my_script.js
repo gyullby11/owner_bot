@@ -5,54 +5,6 @@ let currentOutput = null;
 let currentTab = "blog";
 
 /* ==========================================================================
-   인증 - 회원가입 / 로그인
-   ========================================================================== */
-
-async function register() {
-    const email = document.getElementById("email").value;
-    const nickname = document.getElementById("nickname").value;
-    const password = document.getElementById("password").value;
-
-    const res = await fetch(`${API_BASE}/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, nickname, password })
-    });
-    const data = await res.json();
-    if (res.ok) {
-        window.location.href = "login.html";
-    } else {
-        document.getElementById("message").innerText = data.detail || "회원가입에 실패했습니다.";
-    }
-}
-
-async function login() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    // form-data 방식으로 변경
-    const formData = new URLSearchParams();
-    formData.append("username", email);  // OAuth2는 username 키 사용
-    formData.append("password", password);
-
-    const res = await fetch(`${API_BASE}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData
-    });
-    const data = await res.json();
-    if (res.ok && data.access_token) {
-        localStorage.setItem("access_token", data.access_token);
-        window.location.href = "generate.html";
-    } else {
-       const detail = Array.isArray(data.detail)
-          ? data.detail.map(e => e.msg).join(", ")
-          : data.detail || "로그인에 실패했습니다.";
-       document.getElementById("message").innerText = detail;
-   }
-}
-
-/* ==========================================================================
    콘텐츠 생성
    ========================================================================== */
 
