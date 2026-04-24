@@ -29,7 +29,25 @@ class GenerateRequest(BaseModel):
         return v
 
 
+# ✅ 피드백 5: input/output을 별도 Pydantic 모델로 정의 (dict보다 명확한 검증)
+class GenerateInput(BaseModel):
+    shop_name: str
+    business_type: str
+    region: str
+    keyword: str
+    feature: Optional[str] = None
+    tone: str
+ 
+ 
+class GenerateOutput(BaseModel):
+    blog: Optional[str] = None
+    review: Optional[str] = None
+    shorts: Optional[str] = None
+    thumbnail: Optional[str] = None
+ 
+ 
 class GenerateResponse(BaseModel):
     message: str
-    input: dict
-    output: dict
+    input: GenerateInput
+    output: GenerateOutput
+    credits_remaining: Optional[int] = None
