@@ -11,6 +11,7 @@ def extract_json(raw: str) -> dict | None:
     """JSON 블록 추출 시도 — 마크다운 코드블록 제거 후 파싱"""
     # ```json ... ``` 또는 ``` ... ``` 제거
     cleaned = re.sub(r"```(?:json)?\s*", "", raw).strip().rstrip("`").strip()
+    cleaned = re.sub(r'(?<!\\)\n', '\\n', cleaned)
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
@@ -40,7 +41,7 @@ async def generate_content(data: dict) -> dict:
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.8,
-            max_tokens=2000,
+            max_tokens=4000,
             timeout=30,
         )
     except RateLimitError:
@@ -67,7 +68,7 @@ async def generate_content(data: dict) -> dict:
                 {"role": "user", "content": "위 내용을 반드시 JSON 형식으로만 다시 출력해주세요. 다른 텍스트 없이 JSON만 출력하세요."}
             ],
             temperature=0.3,
-            max_tokens=2000,
+            max_tokens=4000,
             timeout=30,
         )
     except OpenAIError:
