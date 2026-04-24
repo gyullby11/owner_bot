@@ -1,3 +1,13 @@
+import re
+
+def _sanitize(text: str, max_len: int = 200) -> str:
+    if not text:
+        return ""
+    text = text.strip()
+    text = re.sub(r'[\"\'`<>]', '', text)
+    text = re.sub(r'\s+', ' ', text)
+    return text[:max_len]
+
 # 업종별 Few-Shot 예시
 FEW_SHOT_EXAMPLES = {
     "음식점/식당": {
@@ -307,9 +317,16 @@ def build_prompt(
         "emotional": "감성적이고 시적인 묘사, 짧고 여운 있는 문장",
     }
 
+     # 사용자 입력 전처리 (prompt injection 방어)
+    shop_name     = _sanitize(shop_name, max_len=100)
+    business_type = _sanitize(business_type, max_len=50)
+    region        = _sanitize(region, max_len=100)
+    keyword       = _sanitize(keyword, max_len=100)
+    feature       = _sanitize(feature, max_len=200)
+
     tone_desc = tone_guide.get(tone, tone_guide["friendly"])
     feature_text = f"\n가게 특징: {feature}" if feature else ""
-
+    
     # 업종별 SEO 키워드 가이드
     business_seo = {
         "음식점/식당": {
