@@ -1,3 +1,4 @@
+
 /* ==========================================================================
    공통 설정
    ========================================================================== */
@@ -84,14 +85,14 @@ function showTab(tab) {
 
     if (tab === "blog") {
         const blog = currentOutput.blog;
-        if (typeof blog === "object") {
+        if (blog && typeof blog === "object") {
             content.innerText = `${blog.title || ""}\n\n${blog.body || ""}\n\n${blog.hashtags || ""}`;
         } else {
             content.innerText = blog || "";
         }
     } else if (tab === "review") {
         const r = currentOutput.review;
-        if (typeof r === "object") {
+        if (r && typeof r === "object") {
             let text = "";
             if (r.customer_review) text += `📝 고객 리뷰 예시 (고객에게 보내줄 용도)\n${r.customer_review}\n\n`;
             if (r.owner_reply_1) text += `💬 사장님 답글 예시 1 (감사형)\n${r.owner_reply_1}\n\n`;

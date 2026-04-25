@@ -32,7 +32,12 @@ def get_optional_user(
     sub = payload.get("sub")
     if not sub:
         return None
-    return db.query(User).filter(User.id == int(sub)).first()
+    # ✅ 피드백 4: int(sub) 변환 실패 가능성 → try/except 처리
+    try:
+        user_id = int(sub)
+    except (ValueError, TypeError):
+        return None
+    return db.query(User).filter(User.id == user_id).first()
 
 
 @router.post("", response_model=None)

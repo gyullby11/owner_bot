@@ -16,7 +16,12 @@ def save_history(db: Session, data: dict, output: dict, user_id: int = None):
         output_payload=json.dumps(output, ensure_ascii=False),
         credits_used=1
     )
-    db.add(history)
-    db.commit()
-    db.refresh(history)
-    return history
+     # ✅ 피드백 1: commit 실패 시 rollback 처리
+    try:
+        db.add(history)
+        db.commit()
+        db.refresh(history)
+        return history
+    except Exception:
+        db.rollback()
+        raise
