@@ -271,10 +271,9 @@ async function viewHistoryDetail(id) {
             if (output.review) {
                 const r = output.review;
                 if (r && typeof r === "object") {
-                    text += `⭐ [리뷰]\n`;
-                    if (r.customer_review) text += `고객 리뷰:\n${r.customer_review}\n\n`;
-                    if (r.owner_reply_1) text += `답글 예시 1:\n${r.owner_reply_1}\n\n`;
-                    if (r.owner_reply_2) text += `답글 예시 2:\n${r.owner_reply_2}\n\n`;
+                    if (r.customer_review) text += `⭐ [리뷰]\n📝 고객 리뷰 예시\n${r.customer_review}\n\n`;
+                    if (r.owner_reply_1) text += `💬 사장님 답글 예시 1\n${r.owner_reply_1}\n\n`;
+                    if (r.owner_reply_2) text += `💬 사장님 답글 예시 2\n${r.owner_reply_2}\n\n`;
                 } else {
                     text += `⭐ [리뷰]\n${r}\n\n`;
                 }
