@@ -11,7 +11,6 @@ def extract_json(raw: str) -> dict | None:
     """JSON 블록 추출 시도 — 마크다운 코드블록 제거 후 파싱"""
     # ```json ... ``` 또는 ``` ... ``` 제거
     cleaned = re.sub(r"```(?:json)?\s*", "", raw).strip().rstrip("`").strip()
-    cleaned = re.sub(r'(?<!\\)\n', '\\n', cleaned)
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:

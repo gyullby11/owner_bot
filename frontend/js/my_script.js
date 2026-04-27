@@ -255,7 +255,16 @@ async function viewHistoryDetail(id) {
                 const b = output.blog;
                 text += `📝 [블로그]\n${b.title || ""}\n\n${b.body || ""}\n\n${b.hashtags || ""}\n\n`;
             }
-            if (output.review) text += `⭐ [리뷰]\n${output.review}\n\n`;
+            if (output.review) {
+                const r = output.review;
+                if (r && typeof r === "object") {
+                    if (r.customer_review) text += `⭐ [리뷰]\n📝 고객 리뷰 예시\n${r.customer_review}\n\n`;
+                    if (r.owner_reply_1) text += `💬 사장님 답글 예시 1\n${r.owner_reply_1}\n\n`;
+                    if (r.owner_reply_2) text += `💬 사장님 답글 예시 2\n${r.owner_reply_2}\n\n`;
+                } else {
+                    text += `⭐ [리뷰]\n${r}\n\n`;
+                }
+            }
             if (output.shorts) {
                 const s = output.shorts;
                 if (s.timeline) {
