@@ -171,6 +171,29 @@
         </section>
     </main>
 
+    <!-- 크레딧 소진 패키지 선택 모달 -->
+    <div id="credit-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full overflow-hidden animate-fade-in">
+            <!-- 모달 헤더 -->
+            <div class="bg-gradient-to-br from-navy to-steel p-6 text-white text-center relative">
+                <button onclick="closeCreditModal()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition text-white font-bold text-lg leading-none">×</button>
+                <div class="text-4xl mb-2">💳</div>
+                <h3 class="text-xl font-black mb-1">크레딧이 부족합니다</h3>
+                <p id="credit-modal-msg" class="text-sm text-blue-100 font-medium">패키지를 충전하면 계속 이용하실 수 있어요.</p>
+            </div>
+            <!-- 패키지 카드 -->
+            <div class="p-6">
+                <div id="credit-modal-packages" class="grid grid-cols-3 gap-3 mb-5">
+                    <!-- JS로 동적 렌더링 -->
+                    <div class="col-span-3 text-center text-gray-400 py-6">패키지 불러오는 중...</div>
+                </div>
+                <button onclick="closeCreditModal()" class="w-full py-3 rounded-xl border border-gray-200 text-gray-500 font-bold text-sm hover:bg-gray-50 transition">
+                    나중에 충전할게요
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/my_script.js"></script>
