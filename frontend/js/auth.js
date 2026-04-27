@@ -90,11 +90,7 @@ async function register() {
     }
 }
 
-// 로그아웃
-function logout() {
-    clearAuth();
-    window.location.href = "index.html";
-}
+// 로그아웃은 my_script.js의 logout() 함수에서 처리합니다.
 
 // 네비게이션 로그인 상태 반영
 function initAuthNav() {
