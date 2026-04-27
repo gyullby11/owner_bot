@@ -280,7 +280,7 @@ async function viewHistoryDetail(id) {
                     if (r.owner_reply_1) text += `💬 사장님 답글 예시 1\n${r.owner_reply_1}\n\n`;
                     if (r.owner_reply_2) text += `💬 사장님 답글 예시 2\n${r.owner_reply_2}\n\n`;
                 } else {
-                    text += `⭐ [리뷰]\n${r}\n\n`;
+                    text += `⭐ [리뷰]\n${typeof r === "object" ? JSON.stringify(r, null, 2) : r}\n\n`;
                 }
             }
             if (output.shorts) {
@@ -307,7 +307,7 @@ async function viewHistoryDetail(id) {
                 }
             }
         } else {
-            text += h.output_payload;
+            text += typeof h.output_payload === "string" ? h.output_payload : JSON.stringify(h.output_payload, null, 2);
         }
 
         body.textContent = text;
