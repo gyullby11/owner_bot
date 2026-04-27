@@ -1,8 +1,10 @@
+
 /* ==========================================================================
    공통 설정
    ========================================================================== */
 let currentOutput = null;
 let currentTab = "blog";
+let currentHistoryId = null;
 
 /* ==========================================================================
    콘텐츠 생성
@@ -40,19 +42,30 @@ async function generateContent() {
         const data = await res.json();
 
         if (!res.ok) {
+            if (res.status === 403) {
+                // 비로그인 무료 체험 소진
+                alert(data.detail || "무료 체험이 종료되었습니다. 회원가입 후 계속 이용하세요.");
+                window.location.href = "register.html";
+                return;
+            }
             alert(data.detail || "콘텐츠 생성에 실패했습니다.");
             return;
         }
 
         currentOutput = data.output;
-        
+        currentHistoryId = data.history_id || null;
+
         if (data.credits_remaining !== null && data.credits_remaining !== undefined) {
-            const headerCreditsEl = document.getElementById("header-credits");
-            if (headerCreditsEl) headerCreditsEl.innerText = `${data.credits_remaining}회`;
+            const creditsEl = document.getElementById("header-credits");
+            if (creditsEl) creditsEl.textContent = `${data.credits_remaining}회`;
         }
+
+        // 생성 성공 후 히스토리 목록 자동 갱신
+        if (document.getElementById("history-list")) loadHistory();
+
         document.getElementById("empty-state").classList.add("hidden");
         document.getElementById("loading-state").classList.add("hidden");
-        // SEO 뱃지 업데이트
+
         const seoBar = document.getElementById("seo-badge-bar");
         const badgeKeyword = document.getElementById("badge-keyword");
         const badgeRegion = document.getElementById("badge-region");
@@ -255,7 +268,17 @@ async function viewHistoryDetail(id) {
                 const b = output.blog;
                 text += `📝 [블로그]\n${b.title || ""}\n\n${b.body || ""}\n\n${b.hashtags || ""}\n\n`;
             }
-            if (output.review) text += `⭐ [리뷰]\n${output.review}\n\n`;
+            if (output.review) {
+                const r = output.review;
+                if (r && typeof r === "object") {
+                    text += `⭐ [리뷰]\n`;
+                    if (r.customer_review) text += `고객 리뷰:\n${r.customer_review}\n\n`;
+                    if (r.owner_reply_1) text += `답글 예시 1:\n${r.owner_reply_1}\n\n`;
+                    if (r.owner_reply_2) text += `답글 예시 2:\n${r.owner_reply_2}\n\n`;
+                } else {
+                    text += `⭐ [리뷰]\n${r}\n\n`;
+                }
+            }
             if (output.shorts) {
                 const s = output.shorts;
                 if (s.timeline) {
@@ -268,8 +291,16 @@ async function viewHistoryDetail(id) {
                 }
             }
             if (output.thumbnail) {
-                const t = Array.isArray(output.thumbnail) ? output.thumbnail.join("\n") : output.thumbnail;
-                text += `🎨 [썸네일]\n${t}\n`;
+                const thumb = output.thumbnail;
+                if (thumb && typeof thumb === "object" && thumb.copies) {
+                    text += `🎨 [썸네일]\n`;
+                    text += `숫자형: ${thumb.copies.number_type || ""}\n`;
+                    text += `질문형: ${thumb.copies.question_type || ""}\n`;
+                    text += `감성형: ${thumb.copies.emotion_type || ""}\n`;
+                } else {
+                    const t = Array.isArray(thumb) ? thumb.join("\n") : thumb;
+                    text += `🎨 [썸네일]\n${t}\n`;
+                }
             }
         } else {
             text += h.output_payload;
@@ -290,12 +321,66 @@ function closeHistoryDetail() {
 async function regenerateHistory(id) {
     if (!confirm("이 기록으로 재생성하시겠습니까? 크레딧 1회가 차감됩니다.")) return;
     try {
-        await apiRequest(`/history/${id}/regenerate`, { method: "POST" });
+        const data = await apiRequest(`/history/${id}/regenerate`, { method: "POST" });
         alert("재생성이 완료되었습니다.");
         loadHistory();
-        loadMyPage();
+        // mypage.html에서만 loadMyPage() 및 loadCreditHistory() 호출
+        if (document.getElementById("user-info")) {
+            loadMyPage();
+            loadCreditHistory();
+        }
+        // generate.html 헤더 크레딧 갱신
+        if (data.credits_remaining !== null && data.credits_remaining !== undefined) {
+            const creditsEl = document.getElementById("header-credits");
+            if (creditsEl) creditsEl.textContent = `${data.credits_remaining}회`;
+        }
     } catch (e) {
         alert(e.message || "재생성에 실패했습니다.");
+    }
+}
+
+async function loadPackages() {
+    const list = document.getElementById("packages-list");
+    if (!list) return;
+
+    try {
+        const packages = await apiRequest("/mypage/packages");
+        const labels = { light: "라이트", basic: "베이직", pro: "프로" };
+        const badges = { light: "", basic: "🔥 인기", pro: "💎 베스트" };
+
+        list.innerHTML = packages.map(pkg => `
+            <div class="border-2 border-gray-200 hover:border-navy rounded-2xl p-6 text-center transition cursor-pointer group relative" onclick="chargeCredits('${pkg.id}')">
+                ${badges[pkg.id] ? `<span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-camel text-white text-xs font-bold px-3 py-1 rounded-full">${badges[pkg.id]}</span>` : ""}
+                <p class="font-black text-lg text-navy mb-1">${labels[pkg.id] || pkg.id}</p>
+                <p class="text-3xl font-black text-navy mb-1">${pkg.credits}<span class="text-base font-bold text-gray-500">회</span></p>
+                <p class="text-camel font-black text-xl mb-4">${pkg.price.toLocaleString()}원</p>
+                <button class="w-full bg-navy text-white font-bold py-2.5 rounded-xl group-hover:bg-steel transition text-sm">충전하기</button>
+            </div>
+        `).join("");
+    } catch (e) {
+        console.error("패키지 로드 실패", e);
+    }
+}
+
+async function chargeCredits(packageId) {
+    const packageLabels = { light: "라이트", basic: "베이직", pro: "프로" };
+    const label = packageLabels[packageId] || packageId;
+    if (!confirm(`'${label}' 패키지로 충전하시겠습니까?\n(실제 결제 없이 테스트 충전됩니다)`)) return;
+
+    try {
+        const data = await apiRequest("/mypage/charge", {
+            method: "POST",
+            body: JSON.stringify({ package: packageId }),
+        });
+
+        alert(`✅ ${data.charged}크레딧이 충전되었습니다!\n현재 잔여 크레딧: ${data.credits}회`);
+
+        const creditEl = document.getElementById("user-credits");
+        if (creditEl) creditEl.textContent = data.credits;
+
+        loadCreditHistory();
+    } catch (e) {
+        alert(e.message || "충전에 실패했습니다.");
     }
 }
 
@@ -310,6 +395,7 @@ async function loadCreditHistory() {
         const creditEl = document.getElementById("user-credits");
         if (creditEl) creditEl.textContent = data.credits;
 
+        const typeLabel = { earn: "충전", use: "사용", refund: "환불" };
         const tx = data.transactions || [];
         list.innerHTML = tx.length === 0
             ? `<p class="text-gray-500">사용 내역이 없습니다.</p>`
@@ -321,15 +407,50 @@ async function loadCreditHistory() {
                 return `
                 <div class="flex justify-between items-center py-2 px-3 rounded-lg hover:bg-gray-50">
                     <div>
-                        <span class="font-bold text-navy">${t.type}</span>
+                        <span class="font-bold text-navy">${typeLabel[t.type] || t.type}</span>
                         ${t.note ? `<span class="text-gray-500 ml-2">${t.note}</span>` : ""}
                         <p class="text-xs text-gray-400">${date}</p>
                     </div>
-                    <span class="font-black ${color}">${sign}${t.amount}</span>
+                    <span class="font-black ${color}">${sign}${t.amount}회</span>
                 </div>`;
             }).join("");
     } catch (e) {
         console.error("크레딧 내역 로드 실패", e);
+    }
+}
+
+async function regenerateCurrent() {
+    if (!currentHistoryId) {
+        startGeneration();
+        return;
+    }
+    if (!confirm("같은 정보로 재생성하시겠습니까? 크레딧 1회가 차감됩니다.")) return;
+
+    const generateBtn = document.getElementById('generate-btn');
+    const regenBtn = document.getElementById('regen-btn');
+    generateBtn.disabled = true;
+    regenBtn.disabled = true;
+    document.getElementById('loading-state').classList.remove('hidden');
+    document.getElementById('tab-content').innerText = '';
+
+    try {
+        const data = await apiRequest(`/history/${currentHistoryId}/regenerate`, { method: "POST" });
+        currentOutput = data.output;
+        currentHistoryId = data.history_id || currentHistoryId;
+
+        if (data.credits_remaining !== null && data.credits_remaining !== undefined) {
+            const creditsEl = document.getElementById("header-credits");
+            if (creditsEl) creditsEl.textContent = `${data.credits_remaining}회`;
+        }
+
+        document.getElementById('empty-state').classList.add('hidden');
+        showTab("blog");
+    } catch (e) {
+        alert(e.message || "재생성에 실패했습니다.");
+    } finally {
+        document.getElementById('loading-state').classList.add('hidden');
+        generateBtn.disabled = false;
+        regenBtn.disabled = false;
     }
 }
 
@@ -366,6 +487,30 @@ function switchUiTab(tabName) {
     activeBtn.classList.remove('text-gray-500', 'hover:bg-gray-100', 'hover:text-navy');
     activeBtn.classList.add('bg-navy', 'text-white', 'active-tab');
 
+}
+
+/* ==========================================================================
+   generate.html - 게스트/로그인 UI 초기화
+   ========================================================================== */
+
+function initGeneratePage() {
+    const isLoggedIn = !!localStorage.getItem("access_token");
+
+    const loggedInHeader = document.getElementById("header-logged-in");
+    const guestHeader = document.getElementById("header-guest");
+    const guestBanner = document.getElementById("guest-banner");
+
+    if (isLoggedIn) {
+        // 로그인: 크레딧 표시
+        if (loggedInHeader) loggedInHeader.style.display = "flex";
+        if (guestHeader) guestHeader.style.display = "none";
+        if (guestBanner) guestBanner.classList.add("hidden");
+    } else {
+        // 비로그인: 게스트 UI 표시
+        if (loggedInHeader) loggedInHeader.style.display = "none";
+        if (guestHeader) guestHeader.style.display = "flex";
+        if (guestBanner) guestBanner.classList.remove("hidden");
+    }
 }
 
 /* ==========================================================================
@@ -436,6 +581,12 @@ function initSlider() {
    mypage.html - 유저 정보 / 크레딧 로드
    ========================================================================== */
 
+const PLAN_LABELS = {
+    free: { label: "무료 플랜", color: "bg-gray-100 text-gray-600" },
+    per_use: { label: "1회권", color: "bg-blue-100 text-blue-700" },
+    monthly: { label: "월정액", color: "bg-sand/30 text-camel" },
+};
+
 async function loadMyPage() {
     if (!document.getElementById("user-info")) return;
 
@@ -445,7 +596,8 @@ async function loadMyPage() {
     }
 
     try {
-        const user = await apiRequest("/auth/me");
+        // /mypage/me 엔드포인트 사용 (plan 포함)
+        const user = await apiRequest("/mypage/me");
 
         const avatarEl = document.getElementById("user-avatar");
         if (avatarEl) avatarEl.textContent = (user.nickname || user.email)[0];
@@ -459,38 +611,56 @@ async function loadMyPage() {
         const creditEl = document.getElementById("user-credits");
         if (creditEl) creditEl.textContent = user.credits;
 
+        // 플랜 배지 표시
+        const planEl = document.getElementById("user-plan");
+        if (planEl) {
+            const plan = PLAN_LABELS[user.plan] || { label: user.plan, color: "bg-gray-100 text-gray-600" };
+            planEl.textContent = plan.label;
+            planEl.className = `text-xs font-bold px-3 py-1 rounded-full ${plan.color}`;
+        }
+
     } catch (e) {
         console.error("유저 정보 로드 실패", e);
     }
 }
 
 /* ==========================================================================
-   mypage.html - 로그아웃 / 히스토리 상세
-   mypage.html - 내 정보 로드 / 로그아웃
+   mypage.html - 비밀번호 변경
    ========================================================================== */
 
-async function loadMyInfo() {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
+async function changePassword() {
+    const current = document.getElementById("current-password").value;
+    const next = document.getElementById("new-password").value;
+    const confirm = document.getElementById("confirm-password").value;
+    const msg = document.getElementById("password-message");
+
+    const showMsg = (text, isError) => {
+        msg.textContent = text;
+        msg.className = `text-sm font-medium ${isError ? "text-red-500" : "text-green-600"}`;
+        msg.classList.remove("hidden");
+    };
+
+    if (!current || !next || !confirm) return showMsg("모든 항목을 입력해주세요.", true);
+    if (next.length < 6) return showMsg("새 비밀번호는 6자 이상이어야 합니다.", true);
+    if (next !== confirm) return showMsg("새 비밀번호가 일치하지 않습니다.", true);
 
     try {
-        const res = await fetch(`${API_BASE}/mypage/me`, {
-            headers: { "Authorization": `Bearer ${token}` }
+        const data = await apiRequest("/auth/password", {
+            method: "PUT",
+            body: JSON.stringify({ current_password: current, new_password: next }),
         });
-        if (!res.ok) return;
-        const data = await res.json();
-
-        const nicknameEl = document.getElementById("user-nickname");
-        const creditsEl  = document.getElementById("user-credits");
-        const planEl     = document.getElementById("user-plan");
-        const headerCreditsEl = document.getElementById("header-credits");
-
-        if (nicknameEl) nicknameEl.innerText = data.nickname || data.email;
-        if (creditsEl)  creditsEl.innerText  = `${data.credits}회`;
-        if (planEl)     planEl.innerText      = data.plan === "free" ? "무료 플랜" : "구독 플랜";
-        if (headerCreditsEl) headerCreditsEl.innerText = `${data.credits}회`;
-    } catch (e) {}
+        showMsg(data.message || "비밀번호가 변경되었습니다.", false);
+        document.getElementById("current-password").value = "";
+        document.getElementById("new-password").value = "";
+        document.getElementById("confirm-password").value = "";
+    } catch (e) {
+        showMsg(e.message || "비밀번호 변경에 실패했습니다.", true);
+    }
 }
+
+/* ==========================================================================
+   mypage.html - 로그아웃
+   ========================================================================== */
 
 function logout() {
     if (confirm("로그아웃 하시겠습니까?")) {
@@ -504,7 +674,7 @@ function logout() {
    ========================================================================== */
 
 async function loadCreditsDisplay() {
-    const el = document.querySelector(".credits-display");
+    const el = document.getElementById("header-credits");
     if (!el) return;
     const token = localStorage.getItem("access_token");
     if (!token) return;
@@ -515,13 +685,17 @@ async function loadCreditsDisplay() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+    // generate.html 진입 시 UI 상태 초기화 (비로그인 허용)
+    if (document.getElementById("generate-btn")) {
+        initGeneratePage();
+    }
+
     initSlider();
     if (document.getElementById("history-list")) loadHistory();
     if (document.getElementById("user-info")) {
         loadMyPage();
         loadCreditHistory();
+        loadPackages();
     }
     loadCreditsDisplay();
-    loadMyInfo();
-
 });
