@@ -308,7 +308,7 @@ async function startGeneration() {
 
     const typeSelect = document.getElementById('business_type_select');
     const typeInput = document.getElementById('business_type');
-    if (typeSelect.value !== 'custom' && typeSelect.value !== '') {
+    if (typeSelect && typeSelect.value !== 'custom' && typeSelect.value !== '') {
         typeInput.value = typeSelect.value;
     }
 
