@@ -11,7 +11,7 @@
 | 구분 | 주소 | 상태 |
 |------|------|------|
 | 테스트 서버 | http://13.125.46.112:8000 | ✅ 운영 중 (2026-04-22 배포 완료) |
-| 운영 서버 | ownerbot-prod-jw (김정원) | 🔧 세팅 진행 중 — 발표용 |
+| 운영 서버 | http://3.39.126.61:8000 | 🔧 세팅완료(테스트중) — 발표용 |
 
 > ⚠️ **서버 혼용 금지** — 키페어 및 접속 정보 공유 금지. 도메인 연결은 발표 D-7일 결정 후 최종 서버 1대에만.
 
@@ -45,7 +45,10 @@ docker-compose up
 
 ### 4. EC2 운영 배포
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+cp backend/.env.prod.example backend/.env.prod
+# 실제 값 입력 후 저장
+touch backend/owner_bot.db   # DB 파일 미리 생성 (없으면 Docker가 디렉토리로 만들어 오류 발생)
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 - 운영용 환경변수 템플릿: `backend/.env.prod.example`
 - 상세 배포 가이드: `docs/ec2-deploy.md`
@@ -63,8 +66,8 @@ docker-compose -f docker-compose.prod.yml up -d
 ### 배포 일정
 | 시점 | 브랜치 |
 |------|--------|
-| 지금 ~ 5월8 일 | `dev` 브랜치 (테스트 서버만) |
-| 5월 9일 ~ 11일 | `main` 브랜치로 전환, 기능 동결 |
+| 지금 ~ 5월4 일 | `dev` 브랜치 (테스트 서버만) |
+| 5월 4일 오후5시 | `main` 브랜치로 전환, 기능 동결 |
 | 5월 14일 발표 | `main` 브랜치 최신 커밋 기준 서버 1대만 운영 |
 
 ---
@@ -159,11 +162,11 @@ owner_bot/
 | 랜딩 페이지 · SEO 뱃지 · ChatGPT 비교 섹션 | ✅ 완료 | 가영 |
 | generate.html UI · 탭 · 히스토리 모달 | ✅ 완료 | 제민 |
 | 마이페이지 실제 데이터 연동 | ✅ 완료 | 제민 |
-| **재생성 버튼 → POST /history/{id}/regenerate 연결** | 🔧 미완성 | **제민** |
-| **마이페이지 충전 패키지 카드 UI** | 🔧 미완성 | **제민** |
-| **크레딧 소진 시 패키지 선택 모달 (402 처리)** | 🔧 미완성 | **제민** |
-| EC2 운영 서버 배포 + HTTPS (nginx + certbot) | 🔧 미완성 | **정원** |
-| React 컴포넌트 개발 | 🔧 진행 중 | **동주** |
+| 재생성 버튼 → POST /history/{id}/regenerate 연결 | ✅ 완료 | 제민 |
+| 마이페이지 충전 패키지 카드 UI |  ✅ 완료 | 제민 |
+| 크레딧 소진 시 패키지 선택 모달 (402 처리)|  ✅ 완료 | 제민 |
+| EC2 운영 서버 배포 + HTTPS (nginx + certbot) | ✅ 완료 | 정원 |
+| React 컴포넌트 개발 |  ✅ 완료 | 동주 |
 
 ---
 
