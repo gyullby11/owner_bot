@@ -45,7 +45,10 @@ docker-compose up
 
 ### 4. EC2 운영 배포
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+cp backend/.env.prod.example backend/.env.prod
+# 실제 값 입력 후 저장
+touch backend/owner_bot.db   # DB 파일 미리 생성 (없으면 Docker가 디렉토리로 만들어 오류 발생)
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 - 운영용 환경변수 템플릿: `backend/.env.prod.example`
 - 상세 배포 가이드: `docs/ec2-deploy.md`
