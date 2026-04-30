@@ -5,6 +5,9 @@ from sqlalchemy.orm import Session
 from database import get_db
 from modules.generate.schemas import GenerateRequest
 from modules.generate import service
+from modules.generate.crud import save_history
+from modules.generate.models import GuestUsage
+from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user.models import User
 from modules.user import service as user_service
 
@@ -48,12 +51,26 @@ async def generate(
     input_data = body.model_dump()
     output = await service.generate_content(input_data)
 
-    if "error" in output or "blog" not in output:
+    if "error" in output or not any(k in output for k in ["blog", "review", "shorts", "thumbnail"]):
         db.rollback()
         raise HTTPException(status_code=500, detail="콘텐츠 생성 중 오류가 발생했습니다. 다시 시도해 주세요.")
 
-    # 히스토리 저장
-    history = service.save_generation_result(db, body, output, current_user, client_ip)
+    # 히스토리 저장 — crud.save_history() 로 일원화
+    try:
+        history = save_history(db, input_data, output, user_id=current_user.id if current_user else None)
+        if current_user:
+            db.add(CreditTransaction(
+                user_id=current_user.id,
+                amount=-1,
+                type=CreditTransactionType.use,
+                note="콘텐츠 생성",
+            ))
+        else:
+            db.add(GuestUsage(ip_address=client_ip))
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="저장 중 오류가 발생했습니다.")
 
     return {
         "message": "콘텐츠 생성 성공",

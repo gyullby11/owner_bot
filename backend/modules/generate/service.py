@@ -5,9 +5,7 @@ from openai import AsyncOpenAI, RateLimitError, AuthenticationError, OpenAIError
 from sqlalchemy.orm import Session
 from config import settings
 from modules.generate.prompt_builder import build_prompt
-from modules.generate.models import GenerationHistory, GuestUsage
-from modules.generate.schemas import GenerateRequest
-from modules.history.models import CreditTransaction, CreditTransactionType
+from modules.generate.models import GuestUsage
 from modules.user.models import User
 
 client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
@@ -100,36 +98,3 @@ def check_and_deduct_credit(db: Session, current_user: User, client_ip: str):
         if guest_count >= GUEST_FREE_LIMIT:
             raise HTTPException(status_code=403, detail="무료 체험은 1회만 가능합니다. 회원가입 후 이용해 주세요.")
 
-
-def save_generation_result(db: Session, body: GenerateRequest, output: dict, current_user: User, client_ip: str):
-    """히스토리 저장 + 크레딧 트랜잭션 기록"""
-    input_data = body.model_dump()
-    history = GenerationHistory(
-        user_id=current_user.id if current_user else None,
-        shop_name=body.shop_name,
-        business_type=body.business_type,
-        region=body.region,
-        keyword=body.keyword,
-        feature=body.feature,
-        tone=body.tone,
-        input_payload=json.dumps(input_data, ensure_ascii=False),
-        output_payload=json.dumps(output, ensure_ascii=False),
-        credits_used=1,
-    )
-    try:
-        db.add(history)
-        if current_user:
-            db.add(CreditTransaction(
-                user_id=current_user.id,
-                amount=-1,
-                type=CreditTransactionType.use,
-                note="콘텐츠 생성",
-            ))
-        else:
-            db.add(GuestUsage(ip_address=client_ip))
-        db.commit()
-        db.refresh(history)
-        return history
-    except Exception:
-        db.rollback()
-        raise HTTPException(status_code=500, detail="저장 중 오류가 발생했습니다.")
