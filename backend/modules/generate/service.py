@@ -44,7 +44,7 @@ async def generate_content(data: dict) -> dict:
             messages=[{"role": "user", "content": prompt}],
             temperature=0.8,
             max_tokens=4000,
-            timeout=30,
+            timeout=60,
         )
     except RateLimitError:
         return {"error": "OpenAI 크레딧 부족 또는 요청 한도 초과"}
@@ -69,7 +69,7 @@ async def generate_content(data: dict) -> dict:
             ],
             temperature=0.3,
             max_tokens=4000,
-            timeout=30,
+            timeout=60,
         )
     except OpenAIError:
         return {"error": "JSON 파싱 실패"}
