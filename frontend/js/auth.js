@@ -1,4 +1,4 @@
-Packages();// 토큰 관리
+// 토큰 관리
 function saveAuth(token) {
     localStorage.setItem("access_token", token);
 }
