@@ -50,50 +50,6 @@ async function loadMyPage() {
    mypage.html - 패키지 / 크레딧 충전
    ========================================================================== */
 
-async function loadPackages() {
-    const list = document.getElementById("packages-list");
-    if (!list) return;
-
-    try {
-        const packages = await apiRequest("/mypage/packages");
-        const labels = { light: "라이트", basic: "베이직", pro: "프로" };
-        const badges = { light: "", basic: "🔥 인기", pro: "💎 베스트" };
-
-        list.innerHTML = packages.map(pkg => `
-            <div class="border-2 border-gray-200 hover:border-navy rounded-2xl p-6 text-center transition cursor-pointer group relative" onclick="chargeCredits('${pkg.id}')">
-                ${badges[pkg.id] ? `<span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-camel text-white text-xs font-bold px-3 py-1 rounded-full">${badges[pkg.id]}</span>` : ""}
-                <p class="font-black text-lg text-navy mb-1">${labels[pkg.id] || pkg.id}</p>
-                <p class="text-3xl font-black text-navy mb-1">${pkg.credits}<span class="text-base font-bold text-gray-500">회</span></p>
-                <p class="text-camel font-black text-xl mb-4">${pkg.price.toLocaleString()}원</p>
-                <button class="w-full bg-navy text-white font-bold py-2.5 rounded-xl group-hover:bg-steel transition text-sm">충전하기</button>
-            </div>
-        `).join("");
-    } catch (e) {
-        console.error("패키지 로드 실패", e);
-    }
-}
-
-async function chargeCredits(packageId) {
-    const packageLabels = { light: "라이트", basic: "베이직", pro: "프로" };
-    const label = packageLabels[packageId] || packageId;
-    if (!confirm(`'${label}' 패키지로 충전하시겠습니까?\n(실제 결제 없이 테스트 충전됩니다)`)) return;
-
-    try {
-        const data = await apiRequest("/mypage/charge", {
-            method: "POST",
-            body: JSON.stringify({ package: packageId }),
-        });
-
-        alert(`✅ ${data.charged}크레딧이 충전되었습니다!\n현재 잔여 크레딧: ${data.credits}회`);
-
-        const creditEl = document.getElementById("user-credits");
-        if (creditEl) creditEl.textContent = data.credits;
-
-        loadCreditHistory();
-    } catch (e) {
-        alert(e.message || "충전에 실패했습니다.");
-    }
-}
 
 async function loadCreditHistory() {
     const list = document.getElementById("credits-list");
@@ -168,6 +124,6 @@ window.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById("user-info")) {
         loadMyPage();
         loadCreditHistory();
-        loadPackages();
+        renderCreditModalPackages();
     }
 });

@@ -28,34 +28,27 @@ async function generateContent() {
         tone: document.getElementById("tone").value,
     };
 
-    const token = localStorage.getItem("access_token");
-    const headers = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
+    let data;
     try {
-        const res = await fetch(`${API_BASE}/generate`, {
+        data = await apiRequest("/generate", {
             method: "POST",
-            headers,
-            body: JSON.stringify(body)
+            body: JSON.stringify(body),
         });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            if (res.status === 403) {
-                // 비로그인 무료 체험 소진
-                alert(data.detail || "무료 체험이 종료되었습니다. 회원가입 후 계속 이용하세요.");
-                window.location.href = "register.html";
-                return;
-            }
-            if (res.status === 402) {
-                // 크레딧 소진 → 패키지 선택 모달
-                showCreditModal(data.detail || "크레딧이 부족합니다.");
-                return;
-            }
-            alert(data.detail || "콘텐츠 생성에 실패했습니다.");
+    } catch (e) {
+        if (e.status === 403) {
+            alert(e.message || "무료 체험이 종료되었습니다. 회원가입 후 계속 이용하세요.");
+            window.location.href = "register.html";
             return;
         }
+        if (e.status === 402) {
+            showCreditModal(e.message || "크레딧이 부족합니다.");
+            return;
+        }
+        alert(e.message || "콘텐츠 생성에 실패했습니다.");
+        return;
+    }
+
+    try {
 
         currentOutput = data.output;
         currentHistoryId = data.history_id || null;
@@ -286,13 +279,13 @@ function initGeneratePage() {
 
     if (isLoggedIn) {
         // 로그인: 크레딧 표시
-        if (loggedInHeader) loggedInHeader.style.display = "flex";
-        if (guestHeader) guestHeader.style.display = "none";
+        if (loggedInHeader) { loggedInHeader.classList.remove("hidden"); loggedInHeader.classList.add("flex"); }
+        if (guestHeader) guestHeader.classList.add("hidden");
         if (guestBanner) guestBanner.classList.add("hidden");
     } else {
         // 비로그인: 게스트 UI 표시
-        if (loggedInHeader) loggedInHeader.style.display = "none";
-        if (guestHeader) guestHeader.style.display = "flex";
+        if (loggedInHeader) { loggedInHeader.classList.add("hidden"); loggedInHeader.classList.remove("flex"); }
+        if (guestHeader) { guestHeader.classList.remove("hidden"); guestHeader.classList.add("flex"); }
         if (guestBanner) guestBanner.classList.remove("hidden");
     }
 }
