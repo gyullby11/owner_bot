@@ -1,4 +1,4 @@
-// 토큰 관리
+Packages();// 토큰 관리
 function saveAuth(token) {
     localStorage.setItem("access_token", token);
 }
@@ -107,19 +107,19 @@ function initAuthNav() {
     const ctaGuest = document.getElementById("cta-guest");
 
     if (isLoggedIn) {
-        if (loginLink) loginLink.style.display = "none";
-        if (registerLink) registerLink.style.display = "none";
-        if (logoutBtn) logoutBtn.style.display = "inline";
-        if (mypageLink) mypageLink.style.display = "inline";
-        if (mypageLink2) mypageLink2.style.display = "inline";
-        if (ctaGuest) ctaGuest.style.display = "none";
+        if (loginLink) loginLink.classList.add("hidden");
+        if (registerLink) registerLink.classList.add("hidden");
+        if (logoutBtn) logoutBtn.classList.remove("hidden");
+        if (mypageLink) mypageLink.classList.remove("hidden");
+        if (mypageLink2) mypageLink2.classList.remove("hidden");
+        if (ctaGuest) ctaGuest.classList.add("hidden");
     } else {
-        if (loginLink) loginLink.style.display = "inline";
-        if (registerLink) registerLink.style.display = "inline";
-        if (logoutBtn) logoutBtn.style.display = "none";
-        if (mypageLink) mypageLink.style.display = "none";
-        if (mypageLink2) mypageLink2.style.display = "none";
-        if (ctaGuest) ctaGuest.style.display = "inline-flex";
+        if (loginLink) loginLink.classList.remove("hidden");
+        if (registerLink) registerLink.classList.remove("hidden");
+        if (logoutBtn) logoutBtn.classList.add("hidden");
+        if (mypageLink) mypageLink.classList.add("hidden");
+        if (mypageLink2) mypageLink2.classList.add("hidden");
+        if (ctaGuest) ctaGuest.classList.remove("hidden");
     }
 }
 
