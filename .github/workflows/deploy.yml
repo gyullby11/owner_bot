@@ -31,6 +31,9 @@ jobs:
           echo "ACCESS_TOKEN_EXPIRE_MINUTES=60" >> backend/.env
           echo "DATABASE_URL=sqlite:///./owner_bot.db" >> backend/.env
           echo "ENV=development" >> backend/.env
+          echo "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> backend/.env
+          echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> backend/.env
+          echo "MAIL_FROM=${{ secrets.MAIL_FROM }}" >> backend/.env
 
       - name: 서버 임포트 테스트
         run: |
