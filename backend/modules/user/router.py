@@ -129,6 +129,12 @@ async def request_password_reset(
         # 보안상 존재 여부 노출 안 함
         return {"message": "이메일이 존재하면 재설정 링크를 발송했습니다."}
 
+    # 기존 미사용 토큰 만료 처리 (중복 토큰 누적 방지)
+    db.query(PasswordResetToken).filter(
+        PasswordResetToken.email == email,
+        PasswordResetToken.used == False,
+    ).update({"used": True})
+
     token = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
 
