@@ -101,3 +101,97 @@ def change_password(
         db.rollback()
         raise HTTPException(status_code=500, detail="비밀번호 변경 중 오류가 발생했습니다.")
     return {"message": "비밀번호가 변경되었습니다."}
+
+import secrets
+from datetime import datetime, timedelta, timezone
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+from modules.user.models import PasswordResetToken
+
+mail_config = ConnectionConfig(
+    MAIL_USERNAME=settings.MAIL_USERNAME,
+    MAIL_PASSWORD=settings.MAIL_PASSWORD,
+    MAIL_FROM=settings.MAIL_FROM,
+    MAIL_PORT=587,
+    MAIL_SERVER="smtp.gmail.com",
+    MAIL_STARTTLS=True,
+    MAIL_SSL_TLS=False,
+    USE_CREDENTIALS=True,
+)
+
+
+# 비밀번호 재설정 이메일 발송
+@router.post("/password-reset/request")
+async def request_password_reset(
+    email: str,
+    db: Session = Depends(get_db)
+):
+    user = crud.get_user_by_email(db, email)
+    if not user:
+        # 보안상 존재 여부 노출 안 함
+        return {"message": "이메일이 존재하면 재설정 링크를 발송했습니다."}
+
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+
+    reset_token = PasswordResetToken(
+        email=email,
+        token=token,
+        expires_at=expires_at,
+    )
+    db.add(reset_token)
+    db.commit()
+
+    reset_link = f"http://13.125.46.112:8000/reset-password.html?token={token}"
+
+    message = MessageSchema(
+        subject="[사장봇] 비밀번호 재설정 링크",
+        recipients=[email],
+        body=f"""
+        <h2>비밀번호 재설정</h2>
+        <p>아래 링크를 클릭하여 비밀번호를 재설정해주세요.</p>
+        <p>링크는 1시간 동안 유효합니다.</p>
+        <a href="{reset_link}" style="
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #0F1E3F;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        ">비밀번호 재설정하기</a>
+        <p>본인이 요청하지 않았다면 이 이메일을 무시해주세요.</p>
+        """,
+        subtype="html",
+    )
+
+    fm = FastMail(mail_config)
+    await fm.send_message(message)
+
+    return {"message": "이메일이 존재하면 재설정 링크를 발송했습니다."}
+
+
+# 비밀번호 재설정 실행
+@router.post("/password-reset/confirm")
+def confirm_password_reset(
+    token: str,
+    new_password: str,
+    db: Session = Depends(get_db)
+):
+    reset_token = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token == token,
+        PasswordResetToken.used == False,
+        PasswordResetToken.expires_at > datetime.now(timezone.utc)
+    ).first()
+
+    if not reset_token:
+        raise HTTPException(status_code=400, detail="유효하지 않거나 만료된 링크입니다.")
+
+    user = crud.get_user_by_email(db, reset_token.email)
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+
+    user.hashed_password = service.hash_password(new_password)
+    reset_token.used = True
+    db.commit()
+
+    return {"message": "비밀번호가 성공적으로 재설정되었습니다."}
