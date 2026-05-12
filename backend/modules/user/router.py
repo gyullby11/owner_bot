@@ -1,15 +1,19 @@
+import secrets
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from jose import ExpiredSignatureError, JWTError
 from jose import jwt as jose_jwt
 from sqlalchemy.orm import Session
 
+from config import settings
 from database import get_db
+from modules.user.models import PasswordResetToken, User
 from modules.user.schemas import UserRegister, Token, UserOut, PasswordChange
-from modules.user.models import User
 from modules.history.models import CreditTransaction, CreditTransactionType
 from modules.user import crud, service
-from config import settings
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -102,11 +106,6 @@ def change_password(
         raise HTTPException(status_code=500, detail="비밀번호 변경 중 오류가 발생했습니다.")
     return {"message": "비밀번호가 변경되었습니다."}
 
-import secrets
-from datetime import datetime, timedelta, timezone
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
-from modules.user.models import PasswordResetToken
-
 mail_config = ConnectionConfig(
     MAIL_USERNAME=settings.MAIL_USERNAME,
     MAIL_PASSWORD=settings.MAIL_PASSWORD,
@@ -164,8 +163,11 @@ async def request_password_reset(
         subtype="html",
     )
 
-    fm = FastMail(mail_config)
-    await fm.send_message(message)
+    try:
+        fm = FastMail(mail_config)
+        await fm.send_message(message)
+    except Exception:
+        pass
 
     return {"message": "이메일이 존재하면 재설정 링크를 발송했습니다."}
 
@@ -185,6 +187,9 @@ def confirm_password_reset(
 
     if not reset_token:
         raise HTTPException(status_code=400, detail="유효하지 않거나 만료된 링크입니다.")
+
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="비밀번호는 6자 이상이어야 합니다.")
 
     user = crud.get_user_by_email(db, reset_token.email)
     if not user:
