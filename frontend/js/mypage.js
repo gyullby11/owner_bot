@@ -125,5 +125,6 @@ window.addEventListener("DOMContentLoaded", () => {
         loadMyPage();
         loadCreditHistory();
         renderCreditModalPackages();
+        loadHistory();
     }
 });
